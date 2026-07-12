@@ -1,0 +1,82 @@
+:root {
+  --deep-ink: #132a33;
+  --clinical-teal: #147d78;
+  --mist-blue: #dceef2;
+  --paper: #f7fafa;
+  --signal-amber: #c47a16;
+  --critical-red: #b83a3a;
+  --white: #ffffff;
+  --ink-muted: #4d656d;
+  --line: #bfd3d7;
+  --teal-dark: #0e625f;
+  --teal-soft: #e3f2f1;
+  --red-soft: #f9e9e9;
+  --shadow-soft: 0 24px 60px rgb(19 42 51 / 10%);
+  --font-heading: 'Manrope Variable', 'Segoe UI', sans-serif;
+  --font-body: 'Atkinson Hyperlegible', 'Segoe UI', sans-serif;
+  --font-utility: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+
+  color: var(--deep-ink);
+  background: var(--paper);
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-synthesis: none;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--paper);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+body,
+button {
+  font-family: var(--font-body);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--clinical-teal);
+  outline-offset: 4px;
+}
+
+::selection {
+  color: var(--deep-ink);
+  background: var(--mist-blue);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (max-width: 640px) {
+  :root {
+    font-size: 17px;
+  }
+}

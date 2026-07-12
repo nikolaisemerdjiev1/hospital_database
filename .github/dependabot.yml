@@ -1,0 +1,43 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: docker
+    directory: /backend/Hospital.Api
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies

@@ -1,0 +1,25 @@
+name: hospital-coordination
+
+services:
+  database:
+    image: postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-hospital_coordination}
+      POSTGRES_USER: ${POSTGRES_USER:-hospital_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hospital_local_only}
+      PGDATA: /var/lib/postgresql/18/docker
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - hospital_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    shm_size: 128mb
+    stop_grace_period: 30s
+
+volumes:
+  hospital_postgres_data:
