@@ -1,0 +1,13 @@
+@Hospital.Api_HostAddress = http://localhost:5050
+
+GET {{Hospital.Api_HostAddress}}/api/v1/system/status
+Accept: application/json
+
+###
+
+GET {{Hospital.Api_HostAddress}}/health/live
+
+###
+
+GET {{Hospital.Api_HostAddress}}/openapi/v1.json
+Accept: application/json
