@@ -1,5 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+
   <PropertyGroup>
     <RootNamespace>Hospital.Core</RootNamespace>
   </PropertyGroup>

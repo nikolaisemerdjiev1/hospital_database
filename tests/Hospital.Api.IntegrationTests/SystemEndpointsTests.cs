@@ -19,7 +19,7 @@ public sealed class SystemEndpointsTests(HospitalApiFactory factory)
 
         Assert.NotNull(response);
         Assert.Equal("Hospital Coordination API", response.Service);
-        Assert.Equal("ready", response.Status);
+        Assert.Equal("online", response.Status);
         Assert.NotEmpty(response.Environment);
     }
 
@@ -30,6 +30,15 @@ public sealed class SystemEndpointsTests(HospitalApiFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task ReadinessEndpointIsUnhealthyWhenDatabaseIsUnavailable()
+    {
+        HttpResponseMessage response = await client.GetAsync("/health/ready");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("Unhealthy", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

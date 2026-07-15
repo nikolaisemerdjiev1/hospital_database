@@ -23,6 +23,28 @@ jobs:
     name: Backend
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      Authentication__Auth0__Audience: https://hospital-coordination-api-test
+      Authentication__Auth0__Domain: auth.test.local
+      Authentication__Auth0__RoleClaim: https://hospital.test/claims/app_role
+      HOSPITAL_TEST_CONNECTION_STRING: Host=127.0.0.1;Port=5432;Database=hospital_coordination;Username=hospital_app;Password=hospital_ci_only
+      ConnectionStrings__HospitalDatabase: Host=127.0.0.1;Port=5432;Database=hospital_coordination;Username=hospital_app;Password=hospital_ci_only
+      Frontend__Origin: http://localhost:5173
+
+    services:
+      postgres:
+        image: postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+        env:
+          POSTGRES_DB: hospital_coordination
+          POSTGRES_USER: hospital_app
+          POSTGRES_PASSWORD: hospital_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hospital_app -d hospital_coordination"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Check out repository
@@ -38,11 +60,22 @@ jobs:
       - name: Restore locked dependencies
         run: dotnet restore Hospital.slnx --locked-mode
 
+      - name: Restore repository tools
+        run: dotnet tool restore
+
       - name: Verify formatting
         run: dotnet format Hospital.slnx --verify-no-changes --no-restore
 
       - name: Build
         run: dotnet build Hospital.slnx --configuration Release --no-restore
+
+      - name: Verify migration snapshot
+        run: >-
+          dotnet ef migrations has-pending-model-changes
+          --project backend/Hospital.Infrastructure
+          --startup-project backend/Hospital.Api
+          --configuration Release
+          --no-build
 
       - name: Test
         run: dotnet test Hospital.slnx --configuration Release --no-build --no-restore

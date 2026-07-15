@@ -54,6 +54,28 @@ public sealed class CoreArchitectureTests
                 reference.StartsWith("Azure.", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void InfrastructureProjectDoesNotReferenceApi()
+    {
+        string repositoryRoot = FindRepositoryRoot();
+        string projectPath = Path.Combine(
+            repositoryRoot,
+            "backend",
+            "Hospital.Infrastructure",
+            "Hospital.Infrastructure.csproj");
+        XDocument project = XDocument.Load(projectPath);
+
+        string[] projectReferences = project
+            .Descendants()
+            .Where(element => element.Name.LocalName == "ProjectReference")
+            .Select(element => element.Attribute("Include")?.Value ?? string.Empty)
+            .ToArray();
+
+        Assert.DoesNotContain(
+            projectReferences,
+            reference => reference.Contains("Hospital.Api", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static string FindRepositoryRoot()
     {
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
