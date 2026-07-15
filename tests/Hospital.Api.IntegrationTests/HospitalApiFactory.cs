@@ -15,7 +15,15 @@ public sealed class HospitalApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        builder.UseSetting("Authentication:Auth0:Audience", "https://hospital-coordination-api-test");
+        builder.UseSetting("Authentication:Auth0:Domain", "auth.test.local");
+        builder.UseSetting(
+            "Authentication:Auth0:RoleClaim",
+            "https://hospital.test/claims/app_role");
         builder.UseSetting("Frontend:Origin", "http://localhost:5173");
+        builder.UseSetting(
+            "ConnectionStrings:HospitalDatabase",
+            "Host=127.0.0.1;Port=1;Database=hospital_unavailable;Username=test;Password=test;Timeout=1;Command Timeout=1;Pooling=false");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<ILoggerProvider>();

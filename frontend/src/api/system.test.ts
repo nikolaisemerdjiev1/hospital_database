@@ -18,7 +18,7 @@ describe('getSystemStatus', () => {
   it('returns a validated API status response', async () => {
     const body = {
       service: 'Hospital Coordination API',
-      status: 'ready',
+      status: 'online',
       environment: 'Testing',
       timestamp: '2026-07-11T18:00:00Z',
     }

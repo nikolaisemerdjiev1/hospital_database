@@ -28,16 +28,19 @@ Patient books an appointment
 
 ## Current status
 
-Milestone 1 establishes the modern solution foundation. The repository now contains:
+Milestone 2 adds the data and identity foundation. The repository now contains:
 
 - A .NET 10 solution with API, Core, and Infrastructure boundaries
 - A React 19 and TypeScript application with the initial care-relay experience
 - API configuration, structured request logging, Problem Details, health, and OpenAPI endpoints
+- A normalized coordinated-care domain model with explicit PostgreSQL constraints and indexes
+- EF Core migrations, `xmin` optimistic concurrency, and deterministic synthetic demo data
+- Auth0 JWT validation, fail-closed role policies, and active local-profile resolution
 - Backend architecture and integration tests plus frontend component and client tests
 - PostgreSQL 18.4 for local development through Docker Compose
 - A non-root production API container and GitHub Actions continuous integration
 
-Domain data, EF Core migrations, deterministic seed data, and Auth0 arrive in Milestone 2.
+The remaining Milestone 2 work is final validation and review of the completed data and identity foundation.
 
 ## Run locally
 
@@ -53,9 +56,14 @@ docker compose ps
 Start the API from the repository root:
 
 ```shell
+dotnet tool restore
 dotnet restore Hospital.slnx --locked-mode
+dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=127.0.0.1;Port=5432;Database=hospital_coordination;Username=hospital_app;Password=hospital_local_only" --project backend/Hospital.Api
+dotnet run --project backend/Hospital.Api -- --initialize-database
 dotnet run --project backend/Hospital.Api
 ```
+
+The explicit initialization command applies pending migrations and creates the repeatable fictional dataset. Normal API startup never changes the schema or seeds data.
 
 In a second terminal, start React:
 
@@ -65,7 +73,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`. The API health check is available at `http://localhost:5050/health/live`, and its OpenAPI document is available at `http://localhost:5050/openapi/v1.json`.
+Open `http://localhost:5173`. API liveness is available at `http://localhost:5050/health/live`, database readiness at `http://localhost:5050/health/ready`, and OpenAPI at `http://localhost:5050/openapi/v1.json`.
 
 ## Repository structure
 
@@ -85,6 +93,7 @@ Core does not reference API or Infrastructure. The API composes the application,
 - [Modernization blueprint](docs/architecture/modernization-blueprint.md)
 - [Architecture decision log](docs/architecture/decision-log.md)
 - [Solution foundation](docs/architecture/solution-foundation.md)
+- [Data and identity foundation](docs/architecture/data-identity-foundation.md)
 - [Local development guide](docs/development/getting-started.md)
 - [Legacy project history](docs/history/legacy-java.md)
 
