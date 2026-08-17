@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { BrowserRouter } from 'react-router-dom'
 
 import '@fontsource-variable/manrope/wght.css'
 import '@fontsource/atkinson-hyperlegible/latin-400.css'
@@ -7,8 +8,9 @@ import '@fontsource/atkinson-hyperlegible/latin-700.css'
 import '@fontsource/ibm-plex-mono/latin-400.css'
 import '@fontsource/ibm-plex-mono/latin-700.css'
 
-import './index.css'
 import App from './App.tsx'
+import { AuthProvider } from './auth/AuthProvider.tsx'
+import './index.css'
 
 const rootElement = document.getElementById('root')
 
@@ -18,6 +20,10 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 )

@@ -31,6 +31,20 @@ The browser can read every `VITE_*` value bundled into the frontend. Treat the A
 
 `frontend/.env.example` contains the public SPA client ID, Auth0 domain, and API audience. The API uses the same domain and audience plus the namespaced role-claim URI from `appsettings.Development.json`. Production intentionally supplies the equivalent `Authentication__Auth0__Domain`, `Authentication__Auth0__Audience`, and `Authentication__Auth0__RoleClaim` settings at deployment time. The API never needs the SPA's client secret, and no Auth0 client secret is created for this browser flow.
 
+Create the ignored local browser configuration and verify these Auth0 Single Page Application settings:
+
+```powershell
+Set-Location frontend
+Copy-Item .env.example .env.local
+Set-Location ..
+```
+
+- Allowed Callback URL: `http://localhost:5173/auth/callback`
+- Allowed Logout URL: `http://localhost:5173`
+- Allowed Web Origin: `http://localhost:5173`
+
+The frontend requests an access token for `https://hospital-coordination-api` and keeps it in memory. Auth0 handles credentials; React never receives or stores the user's password.
+
 The API project has a .NET user-secrets ID. Local secrets are stored with `dotnet user-secrets`, while production secrets will come from Azure Container Apps. GitHub Actions will receive only deployment values that cannot use OIDC.
 
 Store the local PostgreSQL connection string outside the repository:

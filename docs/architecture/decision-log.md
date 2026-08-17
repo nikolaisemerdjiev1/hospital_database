@@ -281,3 +281,39 @@ Use a calm clinical visual language with role-specific workspaces and a shared c
 ### Revisit trigger
 
 Revise the information architecture after usability testing reveals repeated confusion or inefficient task completion.
+
+## ADR-010: Deliver scheduling as a patient-only vertical slice
+
+**Status:** Accepted
+
+### Context
+
+Milestone 3 needs to prove an authenticated end-to-end workflow without expanding into every role at once. Scheduling also has ownership, time-bound validation, double-booking, and stale-update risks that cannot live safely in UI code.
+
+### Decision
+
+Let patients browse seeded clinician availability, list their own appointments, book a slot, and cancel an upcoming scheduled appointment. Implement the business rules as concrete Core transaction-script use cases over `IApplicationDbContext`. Use the existing PostgreSQL filtered unique index as the final double-booking guard and `xmin` for optimistic concurrency.
+
+### Alternatives considered
+
+- Add doctor and administrator slot authoring in the same milestone
+- Put scheduling rules directly in API controllers
+- Introduce MediatR, generic repositories, CQRS, or a domain-event bus
+- Rely only on an application-level availability check
+
+### Rationale
+
+- Produces one complete, demonstrable patient journey quickly.
+- Keeps authorization and ownership rules testable outside the UI.
+- Reuses the existing modular-monolith and EF Core boundaries.
+- Handles real concurrent booking behavior without premature infrastructure.
+
+### Trade-offs
+
+- Seeded availability must be refreshed deliberately for a current-looking public demo.
+- Clinicians cannot manage their own schedules yet.
+- Runtime audit events remain deferred until a later milestone introduces the required transaction boundary.
+
+### Revisit trigger
+
+Add slot authoring, stronger schedule-overlap enforcement, and a transaction abstraction when clinician workflows or multi-write audit requirements enter scope.

@@ -28,7 +28,7 @@ Patient books an appointment
 
 ## Current status
 
-Milestone 2 adds the data and identity foundation. The repository now contains:
+Milestone 3 builds the first complete patient scheduling vertical slice. The repository now contains:
 
 - A .NET 10 solution with API, Core, and Infrastructure boundaries
 - A React 19 and TypeScript application with the initial care-relay experience
@@ -36,11 +36,14 @@ Milestone 2 adds the data and identity foundation. The repository now contains:
 - A normalized coordinated-care domain model with explicit PostgreSQL constraints and indexes
 - EF Core migrations, `xmin` optimistic concurrency, and deterministic synthetic demo data
 - Auth0 JWT validation, fail-closed role policies, and active local-profile resolution
+- Patient-scoped clinician browsing, appointment booking, listing, and cancellation APIs
+- PostgreSQL-backed double-booking protection and `xmin` stale-update handling
+- An Auth0-protected React care itinerary and accessible three-step booking flow
 - Backend architecture and integration tests plus frontend component and client tests
 - PostgreSQL 18.4 for local development through Docker Compose
 - A non-root production API container and GitHub Actions continuous integration
 
-The remaining Milestone 2 work is final validation and review of the completed data and identity foundation.
+Milestone 3 completes the authenticated patient scheduling journey and its automated and live validation.
 
 ## Run locally
 
@@ -70,6 +73,7 @@ In a second terminal, start React:
 ```shell
 cd frontend
 npm ci
+Copy-Item .env.example .env.local
 npm run dev
 ```
 
@@ -94,6 +98,7 @@ Core does not reference API or Infrastructure. The API composes the application,
 - [Architecture decision log](docs/architecture/decision-log.md)
 - [Solution foundation](docs/architecture/solution-foundation.md)
 - [Data and identity foundation](docs/architecture/data-identity-foundation.md)
+- [Patient scheduling vertical slice](docs/architecture/patient-scheduling-slice.md)
 - [Local development guide](docs/development/getting-started.md)
 - [Legacy project history](docs/history/legacy-java.md)
 
