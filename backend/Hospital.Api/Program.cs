@@ -4,6 +4,7 @@ using Hospital.Api.Authentication;
 using Hospital.Api.Configuration;
 using Hospital.Api.ErrorHandling;
 using Hospital.Api.Middleware;
+using Hospital.Core.Scheduling;
 using Hospital.Infrastructure;
 using Hospital.Infrastructure.Persistence.Initialization;
 
@@ -48,6 +49,12 @@ string databaseConnectionString = builder.Configuration
 
 builder.Services.AddInfrastructure(databaseConnectionString);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
+builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+builder.Services.AddScoped<ListCliniciansUseCase>();
+builder.Services.AddScoped<ListClinicianAvailabilityUseCase>();
+builder.Services.AddScoped<ListPatientAppointmentsUseCase>();
+builder.Services.AddScoped<BookAppointmentUseCase>();
+builder.Services.AddScoped<CancelPatientAppointmentUseCase>();
 
 builder.Services.AddCors(options =>
 {

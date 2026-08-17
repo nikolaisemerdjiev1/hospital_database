@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
@@ -28,6 +29,8 @@ public sealed class AuthenticationDatabaseFixture : IAsyncLifetime
     private readonly PostgreSqlDatabaseFixture database = new();
 
     public string ConnectionString => database.ConnectionString;
+
+    public ApplicationDbContext CreateContext() => database.CreateContext();
 
     public async Task InitializeAsync()
     {
@@ -190,11 +193,15 @@ public sealed class AuthenticationApiFactory : WebApplicationFactory<Program>
 
     private readonly RSA signingRsa = RSA.Create(2048);
     private readonly string connectionString;
+    private readonly TimeProvider timeProvider;
     private bool disposed;
 
-    public AuthenticationApiFactory(string connectionString)
+    public AuthenticationApiFactory(
+        string connectionString,
+        TimeProvider? timeProvider = null)
     {
         this.connectionString = connectionString;
+        this.timeProvider = timeProvider ?? new FixedTimeProvider(AuthTestClock.UtcNow);
     }
 
     public string CreateToken(
@@ -247,6 +254,8 @@ public sealed class AuthenticationApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:HospitalDatabase", connectionString);
         builder.ConfigureTestServices(services =>
         {
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton(timeProvider);
             services
                 .AddControllers()
                 .AddApplicationPart(typeof(TestAuthorizationController).Assembly);
@@ -313,6 +322,17 @@ public sealed class AuthenticationApiFactory : WebApplicationFactory<Program>
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+}
+
+internal static class AuthTestClock
+{
+    public static readonly DateTimeOffset UtcNow =
+        new(2030, 1, 15, 8, 0, 0, TimeSpan.Zero);
+}
+
+internal sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => utcNow;
 }
 
 internal static class AuthTestIdentities

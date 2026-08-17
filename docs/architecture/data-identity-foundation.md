@@ -72,7 +72,7 @@ Run the maintenance mode after configuring the connection string:
 dotnet run --project backend/Hospital.Api -- --initialize-database
 ```
 
-Development configuration supplies a fixed `2026-07-15` anchor date and fake `local-auth|...` subjects. The seed contains only fictional data: 36 patients, 10 clinicians, 4 pharmacists, 60 availability slots, 36 appointments, 14 consultations, 12 fallback medication references, 9 prescriptions, 9 fulfillments, and 46 audit events.
+Development configuration supplies a fixed anchor date and fake `local-auth|...` subjects. Milestone 3 refreshes the development anchor to `2026-08-17` so a newly initialized demo has future scheduling inventory while tests remain repeatable. The seed contains only fictional data: 36 patients, 10 clinicians, 4 pharmacists, 60 availability slots, 36 appointments, 14 consultations, 12 fallback medication references, 9 prescriptions, 9 fulfillments, and 46 audit events.
 
 The initializer validates that all four login subjects are present, unique, free of accidental surrounding whitespace, and within the schema limit before migration or data writes. The seed itself runs in a transaction guarded by a PostgreSQL advisory lock, refuses to mix with a partially populated database, and writes a versioned marker. A repeated run performs no inserts and verifies both the complete v1 dataset shape and that each configured subject is active with exactly the subtype required by its local role.
 
