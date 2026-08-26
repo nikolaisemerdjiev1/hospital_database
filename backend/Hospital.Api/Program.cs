@@ -4,8 +4,12 @@ using Hospital.Api.Authentication;
 using Hospital.Api.Configuration;
 using Hospital.Api.ErrorHandling;
 using Hospital.Api.Middleware;
+using Hospital.Core.Consultations;
+using Hospital.Core.Medications;
+using Hospital.Core.Prescriptions;
 using Hospital.Core.Scheduling;
 using Hospital.Infrastructure;
+using Hospital.Infrastructure.Medications;
 using Hospital.Infrastructure.Persistence.Initialization;
 
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -37,6 +41,16 @@ builder.Services
         "Frontend:Origin must be an absolute HTTP(S) origin without credentials, a path, query, fragment, or trailing slash.")
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<RxNormOptions>()
+    .BindConfiguration(RxNormOptions.SectionName)
+    .ValidateDataAnnotations()
+    .Validate(RxNormOptions.HasValidBaseAddress, "RxNorm:BaseAddress must be a valid HTTPS URL.")
+    .Validate(
+        RxNormOptions.HasValidTimeoutBudget,
+        "RxNorm:TotalRequestTimeoutSeconds must be greater than AttemptTimeoutSeconds.")
+    .ValidateOnStart();
+
 string frontendOrigin = builder.Configuration
     .GetRequiredSection(FrontendOptions.SectionName)
     .GetValue<string>(nameof(FrontendOptions.Origin))
@@ -47,7 +61,13 @@ string databaseConnectionString = builder.Configuration
     ?? throw new InvalidOperationException(
         "ConnectionStrings:HospitalDatabase configuration is required.");
 
-builder.Services.AddInfrastructure(databaseConnectionString);
+RxNormOptions rxNormConfiguration = builder.Configuration
+    .GetRequiredSection(RxNormOptions.SectionName)
+    .Get<RxNormOptions>()
+    ?? throw new InvalidOperationException(
+        $"{RxNormOptions.SectionName} configuration is required.");
+
+builder.Services.AddInfrastructure(databaseConnectionString, rxNormConfiguration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
 builder.Services.AddScoped<ListCliniciansUseCase>();
@@ -55,6 +75,15 @@ builder.Services.AddScoped<ListClinicianAvailabilityUseCase>();
 builder.Services.AddScoped<ListPatientAppointmentsUseCase>();
 builder.Services.AddScoped<BookAppointmentUseCase>();
 builder.Services.AddScoped<CancelPatientAppointmentUseCase>();
+builder.Services.AddScoped<ListDoctorWorklistUseCase>();
+builder.Services.AddScoped<StartConsultationUseCase>();
+builder.Services.AddScoped<GetDoctorConsultationUseCase>();
+builder.Services.AddScoped<SaveConsultationDraftUseCase>();
+builder.Services.AddScoped<CompleteConsultationUseCase>();
+builder.Services.AddScoped<SearchMedicationCatalogUseCase>();
+builder.Services.AddScoped<IssuePrescriptionUseCase>();
+builder.Services.AddScoped<GetDoctorPrescriptionUseCase>();
+builder.Services.AddScoped<CancelPrescriptionUseCase>();
 
 builder.Services.AddCors(options =>
 {

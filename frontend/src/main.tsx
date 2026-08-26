@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 
 import '@fontsource-variable/manrope/wght.css'
 import '@fontsource/atkinson-hyperlegible/latin-400.css'
@@ -18,12 +18,19 @@ if (!rootElement) {
   throw new Error('The application root element was not found.')
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <BrowserRouter>
+const router = createBrowserRouter([
+  {
+    path: '*',
+    element: (
       <AuthProvider>
         <App />
       </AuthProvider>
-    </BrowserRouter>
+    ),
+  },
+])
+
+createRoot(rootElement).render(
+  <StrictMode>
+    <RouterProvider router={router} />
   </StrictMode>,
 )

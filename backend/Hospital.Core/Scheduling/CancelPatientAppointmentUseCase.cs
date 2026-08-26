@@ -1,3 +1,4 @@
+using Hospital.Core.Application;
 using Hospital.Core.Persistence;
 
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ public sealed class CancelPatientAppointmentUseCase(
     IApplicationDbContext applicationDbContext,
     TimeProvider timeProvider)
 {
-    public async Task<SchedulingResult<AppointmentSummary>> ExecuteAsync(
+    public async Task<ApplicationResult<AppointmentSummary>> ExecuteAsync(
         long userProfileId,
         long appointmentId,
         uint expectedVersion,
@@ -19,7 +20,7 @@ public sealed class CancelPatientAppointmentUseCase(
         string? normalizedReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
         if (normalizedReason?.Length > 500)
         {
-            return SchedulingResult.Validation<AppointmentSummary>(
+            return ApplicationResult.Validation<AppointmentSummary>(
                 "invalid_cancellation_reason",
                 "The cancellation reason cannot exceed 500 characters.");
         }
@@ -29,14 +30,14 @@ public sealed class CancelPatientAppointmentUseCase(
                 nameof(AppointmentStatus.Cancelled),
                 StringComparison.OrdinalIgnoreCase))
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "unsupported_transition",
                 "Patients can only cancel appointments in this workflow.");
         }
 
         if (appointmentId <= 0 || expectedVersion == 0)
         {
-            return SchedulingResult.Validation<AppointmentSummary>(
+            return ApplicationResult.Validation<AppointmentSummary>(
                 "invalid_transition_request",
                 "A valid appointment and version are required.");
         }
@@ -53,21 +54,21 @@ public sealed class CancelPatientAppointmentUseCase(
 
         if (appointment is null)
         {
-            return SchedulingResult.NotFound<AppointmentSummary>(
+            return ApplicationResult.NotFound<AppointmentSummary>(
                 "appointment_not_found",
                 "The appointment was not found.");
         }
 
         if (appointment.Version != expectedVersion)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "appointment_changed",
                 "This appointment changed. Refresh it before trying again.");
         }
 
         if (appointment.Status != AppointmentStatus.Scheduled)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "appointment_not_cancellable",
                 "Only scheduled appointments can be cancelled.");
         }
@@ -75,7 +76,7 @@ public sealed class CancelPatientAppointmentUseCase(
         DateTimeOffset now = timeProvider.GetUtcNow();
         if (appointment.AvailabilitySlot.StartsAtUtc <= now)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "appointment_started",
                 "An appointment cannot be cancelled after it starts.");
         }
@@ -103,15 +104,15 @@ public sealed class CancelPatientAppointmentUseCase(
                 .SingleOrDefaultAsync(cancellationToken);
 
             return current is null
-                ? SchedulingResult.NotFound<AppointmentSummary>(
+                ? ApplicationResult.NotFound<AppointmentSummary>(
                     "appointment_not_found",
                     "The appointment was not found.")
-                : SchedulingResult.Conflict<AppointmentSummary>(
+                : ApplicationResult.Conflict<AppointmentSummary>(
                     "appointment_changed",
                     $"This appointment is now {current.Status} at version {current.Version}. Refresh it before trying again.");
         }
 
-        return SchedulingResult.Success(ToSummary(appointment));
+        return ApplicationResult.Success(ToSummary(appointment));
     }
 
     private static AppointmentSummary ToSummary(Appointment appointment) =>

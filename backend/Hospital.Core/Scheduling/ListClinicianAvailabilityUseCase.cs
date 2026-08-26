@@ -1,3 +1,4 @@
+using Hospital.Core.Application;
 using Hospital.Core.Persistence;
 using Hospital.Core.Profiles;
 
@@ -11,7 +12,7 @@ public sealed class ListClinicianAvailabilityUseCase(
 {
     private static readonly TimeSpan MaximumWindow = TimeSpan.FromDays(31);
 
-    public async Task<SchedulingResult<IReadOnlyList<AvailabilitySummary>>> ExecuteAsync(
+    public async Task<ApplicationResult<IReadOnlyList<AvailabilitySummary>>> ExecuteAsync(
         long clinicianProfileId,
         DateTimeOffset from,
         DateTimeOffset to,
@@ -19,14 +20,14 @@ public sealed class ListClinicianAvailabilityUseCase(
     {
         if (clinicianProfileId <= 0)
         {
-            return SchedulingResult.NotFound<IReadOnlyList<AvailabilitySummary>>(
+            return ApplicationResult.NotFound<IReadOnlyList<AvailabilitySummary>>(
                 "clinician_not_found",
                 "The clinician was not found.");
         }
 
         if (to <= from || to - from > MaximumWindow)
         {
-            return SchedulingResult.Validation<IReadOnlyList<AvailabilitySummary>>(
+            return ApplicationResult.Validation<IReadOnlyList<AvailabilitySummary>>(
                 "invalid_availability_window",
                 "The availability window must end after it starts and cannot exceed 31 days.");
         }
@@ -34,7 +35,7 @@ public sealed class ListClinicianAvailabilityUseCase(
         DateTimeOffset now = timeProvider.GetUtcNow();
         if (to <= now)
         {
-            return SchedulingResult.Validation<IReadOnlyList<AvailabilitySummary>>(
+            return ApplicationResult.Validation<IReadOnlyList<AvailabilitySummary>>(
                 "availability_window_in_past",
                 "The availability window must include future time.");
         }
@@ -50,7 +51,7 @@ public sealed class ListClinicianAvailabilityUseCase(
 
         if (!clinicianExists)
         {
-            return SchedulingResult.NotFound<IReadOnlyList<AvailabilitySummary>>(
+            return ApplicationResult.NotFound<IReadOnlyList<AvailabilitySummary>>(
                 "clinician_not_found",
                 "The clinician was not found.");
         }
@@ -73,6 +74,6 @@ public sealed class ListClinicianAvailabilityUseCase(
                 slot.Version))
             .ToArrayAsync(cancellationToken);
 
-        return SchedulingResult.Success<IReadOnlyList<AvailabilitySummary>>(slots);
+        return ApplicationResult.Success<IReadOnlyList<AvailabilitySummary>>(slots);
     }
 }

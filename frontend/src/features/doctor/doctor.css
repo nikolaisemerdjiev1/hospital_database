@@ -1,0 +1,916 @@
+.doctor-workspace,
+.consultation-workspace {
+  width: min(1180px, calc(100% - 3rem));
+  margin: 0 auto;
+  flex: 1;
+  padding: 3.5rem 0 4rem;
+}
+
+.doctor-intro {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.doctor-intro h1 {
+  margin-bottom: 0.7rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(3.2rem, 7vw, 6.2rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.doctor-intro p:last-child {
+  max-width: 670px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.worklist-summary {
+  margin-bottom: 1.4rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 0.35fr)) minmax(260px, 1.3fr);
+  color: white;
+  background: var(--deep-navy);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+  overflow: hidden;
+}
+
+.worklist-summary > div {
+  padding: 1.3rem 1.5rem;
+  display: grid;
+  gap: 0.25rem;
+  border-right: 1px solid rgb(255 255 255 / 15%);
+}
+
+.worklist-summary span {
+  color: #b9d5cf;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.worklist-summary strong {
+  color: #a5e1d6;
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.8rem;
+}
+
+.worklist-summary p {
+  margin: 0;
+  padding: 1.3rem 1.7rem;
+  align-self: center;
+  color: #d4e4e1;
+  line-height: 1.5;
+}
+
+.worklist-board {
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem 0.45rem 2.6rem 0.45rem;
+}
+
+.worklist-board__heading {
+  margin-bottom: 1.6rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.worklist-board__heading .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.worklist-board__heading h2 {
+  margin: 0;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.045em;
+}
+
+.worklist-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.worklist-filters button {
+  min-height: 2.35rem;
+  padding: 0.4rem 0.8rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.worklist-filters button[aria-pressed='true'] {
+  color: white;
+  background: var(--navy);
+}
+
+.worklist-rows {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.worklist-row {
+  min-height: 116px;
+  display: grid;
+  grid-template-columns: minmax(155px, 0.32fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 1.3rem;
+  background: white;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--teal);
+  border-radius: 0.35rem;
+}
+
+.worklist-row:has(.status-pill--inprogress) {
+  border-left-color: var(--gold);
+}
+
+.worklist-row:has(.status-pill--completed),
+.worklist-row:has(.status-pill--cancelled),
+.worklist-row:has(.status-pill--noshow) {
+  border-left-color: #91a7a2;
+}
+
+.worklist-row__time {
+  display: grid;
+  gap: 0.25rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.worklist-row__time span,
+.worklist-row__patient p,
+.worklist-row__closed {
+  color: var(--muted);
+}
+
+.worklist-row__patient h3 {
+  margin: 0.35rem 0 0.2rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: -0.025em;
+}
+
+.worklist-row__patient p {
+  margin: 0;
+}
+
+.clinical-action {
+  min-width: 170px;
+}
+
+.worklist-row__closed {
+  font-size: 0.86rem;
+}
+
+.clinical-loading {
+  min-height: 300px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  color: var(--muted);
+}
+
+.clinical-error {
+  margin-bottom: 1rem;
+  padding: 1rem 1.2rem;
+  color: #682b28;
+  background: #fbe9e7;
+  border-left: 4px solid var(--coral);
+  border-radius: 0.35rem;
+}
+
+.clinical-error p {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.clinical-error small {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.consultation-topline {
+  margin-bottom: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.consultation-heading {
+  margin-bottom: 1.8rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.consultation-heading h1 {
+  margin-bottom: 0.45rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.consultation-heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.save-state {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.save-state > span {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+}
+
+.save-state .is-saved {
+  background: var(--teal);
+}
+
+.save-state .is-unsaved {
+  background: var(--gold);
+  box-shadow: 0 0 0 4px rgb(214 165 74 / 20%);
+}
+
+.visit-ribbon {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  color: white;
+  background: var(--deep-navy);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+  list-style: none;
+  overflow: hidden;
+}
+
+.visit-ribbon li {
+  position: relative;
+  min-height: 92px;
+  padding: 1.1rem 1.2rem;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  border-right: 1px solid rgb(255 255 255 / 14%);
+}
+
+.visit-ribbon li:last-child {
+  border-right: 0;
+}
+
+.visit-ribbon li > span {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  color: #bdd8d3;
+  border: 1px solid #658983;
+  border-radius: 50%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.visit-ribbon li.is-complete > span {
+  color: var(--deep-navy);
+  background: #96dacd;
+  border-color: #96dacd;
+}
+
+.visit-ribbon li.is-current {
+  background: rgb(255 255 255 / 8%);
+}
+
+.visit-ribbon li.is-current::after {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  bottom: 0;
+  left: 1rem;
+  height: 4px;
+  background: var(--gold);
+}
+
+.visit-ribbon div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.visit-ribbon small {
+  color: #a8c2bd;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.visit-ribbon strong {
+  font-size: 0.94rem;
+}
+
+.consultation-layout {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.consultation-form,
+.patient-context,
+.prescription-workspace,
+.prescription-locked {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+}
+
+.consultation-form {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  display: grid;
+  gap: 1.35rem;
+}
+
+.clinical-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.clinical-section-heading .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.clinical-section-heading h2 {
+  margin: 0;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+  letter-spacing: -0.045em;
+}
+
+.clinical-section-heading > span,
+.rxnorm-mark {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.consultation-form label,
+.selected-medication label,
+.medication-search > label {
+  display: grid;
+  gap: 0.5rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.consultation-form input,
+.selected-medication input,
+.medication-search input {
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.72rem 0.8rem;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #789992;
+  border-radius: 0.35rem;
+}
+
+.consultation-form textarea {
+  min-height: 125px;
+}
+
+.consultation-form label > small,
+.selected-medication label > small {
+  justify-self: end;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.consultation-form [readonly] {
+  color: #344f54;
+  background: #edf4f2;
+  border-color: #c5d7d2;
+}
+
+.field-visibility {
+  width: fit-content;
+  margin-left: 0.35rem;
+  padding: 0.2rem 0.45rem;
+  color: #5e4a1c;
+  background: #f6e9c7;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.patient-facing-fields {
+  padding: 1.2rem;
+  display: grid;
+  gap: 1.25rem;
+  background: #e7f3f0;
+  border: 1px solid #b5d5ce;
+  border-radius: 0.4rem 0.4rem 1.4rem 0.4rem;
+}
+
+.patient-facing-fields > p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.consultation-actions {
+  padding-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.consultation-actions p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.patient-context {
+  position: sticky;
+  top: 1.5rem;
+  padding: 1.5rem;
+  color: white;
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+.patient-context .eyebrow {
+  color: #9fddd2;
+}
+
+.patient-context h2 {
+  margin-bottom: 1.4rem;
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: -0.035em;
+}
+
+.patient-context dl {
+  margin: 0;
+  display: grid;
+}
+
+.patient-context dl > div {
+  padding: 0.85rem 0;
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 15%);
+}
+
+.patient-context dt {
+  color: #b8d0cb;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.patient-context dd {
+  margin: 0;
+}
+
+.patient-context .allergy-context {
+  margin-top: 0.4rem;
+  padding: 0.85rem;
+  color: #382b0c;
+  background: #f1dca9;
+  border: 0;
+  border-radius: 0.35rem;
+}
+
+.patient-context .allergy-context dt {
+  color: #6c5318;
+}
+
+.synthetic-context-note {
+  margin: 1.2rem 0 0;
+  color: #b8d0cb;
+  font-size: 0.75rem;
+}
+
+.prescription-locked {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  align-items: center;
+  gap: 1.2rem;
+  background: var(--mist);
+  border-style: dashed;
+}
+
+.prescription-locked > span {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  color: var(--teal);
+  border: 2px solid var(--teal);
+  border-radius: 50%;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.prescription-locked .eyebrow {
+  margin-bottom: 0.25rem;
+}
+
+.prescription-locked h2 {
+  margin-bottom: 0.35rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  letter-spacing: -0.035em;
+}
+
+.prescription-locked p:last-child {
+  margin: 0;
+  color: var(--muted);
+}
+
+.prescription-workspace {
+  margin-top: 1.5rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.prescription-workspace .clinical-section-heading {
+  margin-bottom: 1.5rem;
+}
+
+.clinical-section-heading > div > p:last-child {
+  max-width: 680px;
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+}
+
+.rxnorm-mark {
+  padding: 0.45rem 0.65rem;
+  color: #13564f;
+  background: #d8eee9;
+  border-radius: 999px;
+}
+
+.prescription-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.medication-order,
+.prescription-history {
+  min-width: 0;
+}
+
+.medication-search {
+  position: relative;
+}
+
+.medication-search > p {
+  margin: 0.35rem 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.catalog-status {
+  min-height: 2rem;
+  padding: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.medication-results {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% - 1.9rem);
+  right: 0;
+  left: 0;
+  max-height: 380px;
+  padding: 0.45rem;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #789992;
+  border-radius: 0.4rem;
+  box-shadow: var(--shadow);
+}
+
+.medication-results ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+}
+
+.medication-results button {
+  width: 100%;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+  color: var(--ink);
+  text-align: left;
+  background: white;
+  border: 1px solid transparent;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.medication-results button:hover,
+.medication-results button[aria-current='true'] {
+  background: var(--mist);
+  border-color: var(--teal);
+}
+
+.medication-results span,
+.medication-results code,
+.selected-medication code,
+.prescription-card code {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.medication-results code,
+.selected-medication code,
+.prescription-card code {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.medication-results > p {
+  margin: 0;
+  padding: 1rem;
+  color: var(--muted);
+}
+
+.medication-prompt {
+  min-height: 130px;
+  margin: 0.7rem 0 0;
+  padding: 1.2rem;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  text-align: center;
+  background: var(--mist);
+  border: 1px dashed var(--line);
+  border-radius: 0.4rem;
+}
+
+.selected-medication {
+  margin: 0.7rem 0 0;
+  padding: 1.2rem;
+  display: grid;
+  gap: 1rem;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem 0.4rem 1.4rem 0.4rem;
+}
+
+.selected-medication legend {
+  padding: 0 0.5rem;
+  font-family: 'Manrope Variable', sans-serif;
+  font-weight: 700;
+}
+
+.selected-medication__name {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.selected-medication__name > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.prescription-history > h3 {
+  margin-bottom: 0.8rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.3rem;
+  letter-spacing: -0.025em;
+}
+
+.prescription-card {
+  margin-bottom: 0.7rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--teal);
+  border-radius: 0.35rem;
+}
+
+.prescription-card > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.prescription-card h4 {
+  margin: 0.8rem 0 0.2rem;
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.08rem;
+}
+
+.fulfillment-label {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.prescription-card dl {
+  margin: 0.8rem 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.prescription-card dl > div {
+  display: grid;
+  grid-template-columns: 75px 1fr;
+  gap: 0.6rem;
+}
+
+.prescription-card dt {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.prescription-card dd {
+  margin: 0;
+}
+
+.danger-link {
+  color: #8c3430;
+}
+
+.status-pill--draft,
+.status-pill--issued {
+  color: #6f4c0c;
+  background: #f8e7bf;
+}
+
+.clinical-confirmation {
+  margin: 0;
+}
+
+.clinical-confirmation::backdrop {
+  background: rgb(9 43 54 / 35%);
+}
+
+.clinical-confirmation > div:first-child > p:last-child {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .worklist-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .worklist-summary p {
+    grid-column: 1 / -1;
+  }
+
+  .worklist-board__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .worklist-row {
+    grid-template-columns: 135px 1fr;
+  }
+
+  .worklist-row .clinical-action,
+  .worklist-row__closed {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .consultation-layout,
+  .prescription-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-context {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .doctor-workspace,
+  .consultation-workspace {
+    width: min(100% - 2rem, 1180px);
+    padding-top: 2.5rem;
+  }
+
+  .doctor-intro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .worklist-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .worklist-summary > div:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid rgb(255 255 255 / 15%);
+  }
+
+  .worklist-row {
+    grid-template-columns: 1fr;
+  }
+
+  .worklist-row .clinical-action,
+  .worklist-row__closed {
+    grid-column: 1;
+  }
+
+  .worklist-filters {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 0.5rem;
+  }
+
+  .consultation-heading,
+  .clinical-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .visit-ribbon {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .visit-ribbon li:nth-child(2) {
+    border-right: 0;
+  }
+
+  .visit-ribbon li:nth-child(n + 3) {
+    border-top: 1px solid rgb(255 255 255 / 14%);
+  }
+
+  .selected-medication__name,
+  .prescription-card > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clinical-confirmation {
+    right: 1rem;
+    bottom: 1rem;
+    width: calc(100% - 2rem);
+  }
+}

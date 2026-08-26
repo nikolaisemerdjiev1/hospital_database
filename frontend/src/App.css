@@ -211,6 +211,7 @@
 
 .hero h1 em {
   position: relative;
+  display: inline-block;
   color: var(--teal);
   font-style: normal;
   white-space: nowrap;
@@ -219,12 +220,13 @@
 .hero h1 em::after {
   content: '';
   position: absolute;
-  right: 0;
-  bottom: -0.08em;
-  left: 0;
-  height: 0.09em;
+  right: 0.06em;
+  bottom: -0.06em;
+  left: 0.04em;
+  height: 0.1em;
   background: var(--gold);
-  transform: rotate(-1.5deg);
+  clip-path: polygon(0 32%, 100% 0, 98% 72%, 2% 100%);
+  pointer-events: none;
 }
 
 .hero__summary {
@@ -637,9 +639,12 @@
 }
 
 .success-notice {
+  width: 100%;
+  display: block;
   color: #155c54;
   background: #dff3ee;
   border-left: 4px solid var(--teal);
+  overflow-wrap: anywhere;
 }
 
 .action-panel {

@@ -1,3 +1,4 @@
+using Hospital.Core.Application;
 using Hospital.Core.Profiles;
 using Hospital.Core.Scheduling;
 using Hospital.Infrastructure.Persistence;
@@ -20,14 +21,14 @@ public sealed class SchedulingConcurrencyTests(PostgreSqlDatabaseFixture databas
         BookAppointmentUseCase first = new(firstContext, TimeProvider.System);
         BookAppointmentUseCase second = new(secondContext, TimeProvider.System);
 
-        SchedulingResult<AppointmentSummary>[] results = await Task.WhenAll(
+        ApplicationResult<AppointmentSummary>[] results = await Task.WhenAll(
             first.ExecuteAsync(userProfileId, slot.Id, slot.Version, "First request"),
             second.ExecuteAsync(userProfileId, slot.Id, slot.Version, "Second request"));
 
         Assert.Single(results, result => result.IsSuccess);
-        SchedulingResult<AppointmentSummary> conflict = Assert.Single(
+        ApplicationResult<AppointmentSummary> conflict = Assert.Single(
             results,
-            result => result.Failure == SchedulingFailure.Conflict);
+            result => result.Failure == ApplicationFailure.Conflict);
         Assert.Equal("availability_taken", conflict.ErrorCode);
 
         await using ApplicationDbContext verificationContext = database.CreateContext();
@@ -79,7 +80,7 @@ public sealed class SchedulingConcurrencyTests(PostgreSqlDatabaseFixture databas
         CancelPatientAppointmentUseCase first = new(firstContext, clock);
         CancelPatientAppointmentUseCase second = new(secondContext, clock);
 
-        SchedulingResult<AppointmentSummary>[] results = await Task.WhenAll(
+        ApplicationResult<AppointmentSummary>[] results = await Task.WhenAll(
             first.ExecuteAsync(
                 userProfileId,
                 appointmentId,
@@ -94,9 +95,9 @@ public sealed class SchedulingConcurrencyTests(PostgreSqlDatabaseFixture databas
                 "Second request"));
 
         Assert.Single(results, result => result.IsSuccess);
-        SchedulingResult<AppointmentSummary> conflict = Assert.Single(
+        ApplicationResult<AppointmentSummary> conflict = Assert.Single(
             results,
-            result => result.Failure == SchedulingFailure.Conflict);
+            result => result.Failure == ApplicationFailure.Conflict);
         Assert.True(
             conflict.ErrorCode is "appointment_changed" or "appointment_not_cancellable");
 

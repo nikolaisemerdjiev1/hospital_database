@@ -1,3 +1,4 @@
+using Hospital.Core.Application;
 using Hospital.Core.Persistence;
 using Hospital.Core.Profiles;
 
@@ -9,7 +10,7 @@ public sealed class BookAppointmentUseCase(
     IApplicationDbContext applicationDbContext,
     TimeProvider timeProvider)
 {
-    public async Task<SchedulingResult<AppointmentSummary>> ExecuteAsync(
+    public async Task<ApplicationResult<AppointmentSummary>> ExecuteAsync(
         long userProfileId,
         long availabilitySlotId,
         uint expectedAvailabilityVersion,
@@ -19,14 +20,14 @@ public sealed class BookAppointmentUseCase(
         string normalizedReason = reason?.Trim() ?? string.Empty;
         if (normalizedReason.Length is < 1 or > 500)
         {
-            return SchedulingResult.Validation<AppointmentSummary>(
+            return ApplicationResult.Validation<AppointmentSummary>(
                 "invalid_appointment_reason",
                 "The appointment reason must contain between 1 and 500 characters.");
         }
 
         if (availabilitySlotId <= 0 || expectedAvailabilityVersion == 0)
         {
-            return SchedulingResult.Validation<AppointmentSummary>(
+            return ApplicationResult.Validation<AppointmentSummary>(
                 "invalid_booking_request",
                 "A valid availability slot and version are required.");
         }
@@ -43,7 +44,7 @@ public sealed class BookAppointmentUseCase(
 
         if (patient is null || patient.Status != AccountStatus.Active)
         {
-            return SchedulingResult.NotFound<AppointmentSummary>(
+            return ApplicationResult.NotFound<AppointmentSummary>(
                 "patient_profile_not_found",
                 "The patient profile was not found.");
         }
@@ -59,7 +60,7 @@ public sealed class BookAppointmentUseCase(
             slot.ClinicianProfile.UserProfile.Status != AccountStatus.Active ||
             slot.ClinicianProfile.UserProfile.ProfileType != ProfileType.Doctor)
         {
-            return SchedulingResult.NotFound<AppointmentSummary>(
+            return ApplicationResult.NotFound<AppointmentSummary>(
                 "availability_not_found",
                 "The availability slot was not found.");
         }
@@ -67,14 +68,14 @@ public sealed class BookAppointmentUseCase(
         DateTimeOffset now = timeProvider.GetUtcNow();
         if (slot.StartsAtUtc <= now)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "availability_started",
                 "This appointment time has already started.");
         }
 
         if (slot.Version != expectedAvailabilityVersion)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "availability_changed",
                 "This appointment time changed. Refresh the available times and try again.");
         }
@@ -89,7 +90,7 @@ public sealed class BookAppointmentUseCase(
 
         if (slotAlreadyBooked)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "availability_taken",
                 "This appointment time is no longer available.");
         }
@@ -106,7 +107,7 @@ public sealed class BookAppointmentUseCase(
 
         if (patientHasOverlap)
         {
-            return SchedulingResult.Conflict<AppointmentSummary>(
+            return ApplicationResult.Conflict<AppointmentSummary>(
                 "appointment_overlap",
                 "You already have an appointment during this time.");
         }
@@ -138,7 +139,7 @@ public sealed class BookAppointmentUseCase(
 
             if (competingBookingExists)
             {
-                return SchedulingResult.Conflict<AppointmentSummary>(
+                return ApplicationResult.Conflict<AppointmentSummary>(
                     "availability_taken",
                     "This appointment time was just booked by someone else.");
             }
@@ -146,7 +147,7 @@ public sealed class BookAppointmentUseCase(
             throw;
         }
 
-        return SchedulingResult.Success(new AppointmentSummary(
+        return ApplicationResult.Success(new AppointmentSummary(
             appointment.Id,
             slot.ClinicianProfileId,
             slot.ClinicianProfile.UserProfile.DisplayName,

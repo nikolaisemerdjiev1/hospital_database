@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 
+using Hospital.Core.Medications;
 using Hospital.Core.Profiles;
 using Hospital.Infrastructure.Persistence;
 
@@ -57,6 +58,12 @@ public sealed class AuthenticationDatabaseFixture : IAsyncLifetime
             ProfileType.Doctor,
             AccountStatus.Active,
             createdAtUtc);
+        UserProfile otherDoctor = CreateUser(
+            AuthTestIdentities.OtherDoctorSubject,
+            AuthTestIdentities.OtherDoctorDisplayName,
+            ProfileType.Doctor,
+            AccountStatus.Active,
+            createdAtUtc);
         UserProfile pharmacist = CreateUser(
             AuthTestIdentities.PharmacistSubject,
             AuthTestIdentities.PharmacistDisplayName,
@@ -104,6 +111,7 @@ public sealed class AuthenticationDatabaseFixture : IAsyncLifetime
         context.UserProfiles.AddRange(
             patient,
             doctor,
+            otherDoctor,
             pharmacist,
             administrator,
             inactivePatient,
@@ -120,6 +128,7 @@ public sealed class AuthenticationDatabaseFixture : IAsyncLifetime
             CreatePatientProfile(invalidPatientComposition.Id, "AUTH-MRN-004", createdAtUtc));
         context.ClinicianProfiles.AddRange(
             CreateClinicianProfile(doctor.Id, "AUTH-DOC-001", createdAtUtc),
+            CreateClinicianProfile(otherDoctor.Id, "AUTH-DOC-003", createdAtUtc),
             CreateClinicianProfile(
                 invalidPatientComposition.Id,
                 "AUTH-DOC-002",
@@ -193,15 +202,18 @@ public sealed class AuthenticationApiFactory : WebApplicationFactory<Program>
 
     private readonly RSA signingRsa = RSA.Create(2048);
     private readonly string connectionString;
+    private readonly IMedicationCatalog? medicationCatalog;
     private readonly TimeProvider timeProvider;
     private bool disposed;
 
     public AuthenticationApiFactory(
         string connectionString,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        IMedicationCatalog? medicationCatalog = null)
     {
         this.connectionString = connectionString;
         this.timeProvider = timeProvider ?? new FixedTimeProvider(AuthTestClock.UtcNow);
+        this.medicationCatalog = medicationCatalog;
     }
 
     public string CreateToken(
@@ -256,6 +268,12 @@ public sealed class AuthenticationApiFactory : WebApplicationFactory<Program>
         {
             services.RemoveAll<TimeProvider>();
             services.AddSingleton(timeProvider);
+            if (medicationCatalog is not null)
+            {
+                services.RemoveAll<IMedicationCatalog>();
+                services.AddSingleton(medicationCatalog);
+            }
+
             services
                 .AddControllers()
                 .AddApplicationPart(typeof(TestAuthorizationController).Assembly);
@@ -339,6 +357,7 @@ internal static class AuthTestIdentities
 {
     public const string PatientSubject = "auth-test|patient";
     public const string DoctorSubject = "auth-test|doctor";
+    public const string OtherDoctorSubject = "auth-test|other-doctor";
     public const string PharmacistSubject = "auth-test|pharmacist";
     public const string AdministratorSubject = "auth-test|administrator";
     public const string InactivePatientSubject = "auth-test|inactive-patient";
@@ -351,6 +370,7 @@ internal static class AuthTestIdentities
 
     public const string PatientDisplayName = "Authentication Patient";
     public const string DoctorDisplayName = "Authentication Doctor";
+    public const string OtherDoctorDisplayName = "Other Authentication Doctor";
     public const string PharmacistDisplayName = "Authentication Pharmacist";
     public const string AdministratorDisplayName = "Authentication Administrator";
 }
