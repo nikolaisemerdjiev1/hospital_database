@@ -14,6 +14,9 @@ import {
   type Availability,
   type Clinician,
 } from './api/scheduling'
+import { DoctorWorklistPage } from './features/doctor/DoctorWorklistPage'
+import { ConsultationPage } from './features/doctor/ConsultationPage'
+import { NavigationGuardProvider } from './navigation/NavigationGuard'
 import './App.css'
 
 const careStages = ['Appointment', 'Consultation', 'Prescription', 'Pharmacy'] as const
@@ -80,7 +83,7 @@ function LandingPage() {
                   : loginWithRedirect({ appState: { returnTo: '/app' } })
               }
             >
-              {isAuthenticated ? 'Open patient workspace' : 'Enter the patient demo'}
+              {isAuthenticated ? 'Open secure workspace' : 'Enter the care demo'}
             </button>
             <a className="secondary-link" href="#care-relay">
               See how care moves
@@ -132,7 +135,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   if (!isAuthenticated) {
     return (
       <main id="main-content" className="centered-state">
-        <p className="eyebrow">Patient workspace</p>
+        <p className="eyebrow">Secure workspace</p>
         <h1>Sign in to continue your care journey.</h1>
         <p>Your Auth0 session protects the fictional appointments in this demonstration.</p>
         <button
@@ -147,6 +150,49 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   return children
+}
+
+function WorkspaceIndexPage() {
+  const { getAccessTokenSilently } = useAuth0()
+  const [identity, setIdentity] = useState<Identity | null>(null)
+  const [error, setError] = useState<unknown>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    getAccessTokenSilently()
+      .then((token) => getIdentity(token, controller.signal))
+      .then(setIdentity)
+      .catch((requestError: unknown) => {
+        if (!controller.signal.aborted) setError(requestError)
+      })
+
+    return () => controller.abort()
+  }, [getAccessTokenSilently])
+
+  if (error !== null) {
+    return (
+      <main id="main-content" className="centered-state">
+        <ErrorNotice error={error} />
+      </main>
+    )
+  }
+
+  if (!identity) return <LoadingScreen message="Finding your care workspace" />
+
+  const role = identity.role.toLowerCase()
+  if (role === 'doctor') return <Navigate to="/app/doctor" replace />
+  if (role === 'patient') return <DashboardPage />
+
+  return (
+    <main id="main-content" className="centered-state">
+      <p className="eyebrow">Role-specific workspace</p>
+      <h1>The {role} experience is not part of this milestone yet.</h1>
+      <p>
+        Your signed role was recognized. A later workflow will connect this demo account to
+        its own task-focused workspace.
+      </p>
+    </main>
+  )
 }
 
 function AuthCallbackPage() {
@@ -639,7 +685,8 @@ function App() {
   if (isLoading) return <LoadingScreen message="Opening Harbor Care" />
 
   return (
-    <div className="app-shell">
+    <NavigationGuardProvider>
+      <div className="app-shell">
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
@@ -651,7 +698,23 @@ function App() {
           path="/app"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <WorkspaceIndexPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/doctor"
+          element={
+            <ProtectedRoute>
+              <DoctorWorklistPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/doctor/consultations/:consultationId"
+          element={
+            <ProtectedRoute>
+              <ConsultationPage />
             </ProtectedRoute>
           }
         />
@@ -668,7 +731,8 @@ function App() {
       <footer className="site-footer">
         <p>Educational portfolio demonstration · Synthetic data only · Not for clinical use</p>
       </footer>
-    </div>
+      </div>
+    </NavigationGuardProvider>
   )
 }
 

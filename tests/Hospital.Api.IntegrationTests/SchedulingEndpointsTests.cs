@@ -61,7 +61,9 @@ public sealed class SchedulingEndpointsTests : IDisposable
         ClinicianResponse[] clinicians = JsonSerializer.Deserialize<ClinicianResponse[]>(
             json,
             JsonOptions) ?? [];
-        ClinicianResponse clinician = Assert.Single(clinicians);
+        ClinicianResponse clinician = Assert.Single(
+            clinicians,
+            candidate => candidate.DisplayName == AuthTestIdentities.DoctorDisplayName);
         Assert.Equal(AuthTestIdentities.DoctorDisplayName, clinician.DisplayName);
         Assert.Equal("Test Medicine", clinician.Specialty);
         Assert.DoesNotContain(AuthTestIdentities.DoctorSubject, json, StringComparison.Ordinal);

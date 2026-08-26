@@ -1,6 +1,6 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
@@ -41,11 +41,12 @@ function createDeferred<T>() {
 }
 
 function renderRoute(path = '/') {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+  const router = createMemoryRouter(
+    [{ path: '*', element: <App /> }],
+    { initialEntries: [path] },
   )
+
+  return { router, ...render(<RouterProvider router={router} />) }
 }
 
 beforeEach(() => {
@@ -72,7 +73,7 @@ describe('App', () => {
     expect(screen.getByText(/every person and health detail/i)).toBeInTheDocument()
     expect(screen.getAllByRole('listitem')).toHaveLength(4)
 
-    await user.click(screen.getByRole('button', { name: 'Enter the patient demo' }))
+    await user.click(screen.getByRole('button', { name: 'Enter the care demo' }))
 
     expect(auth.loginWithRedirect).toHaveBeenCalledWith({ appState: { returnTo: '/app' } })
   })
@@ -155,6 +156,366 @@ describe('App', () => {
     expect(screen.getByText('Annual wellness visit')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel visit' })).toBeInTheDocument()
     expect(screen.getByText(/local timezone/i)).toBeInTheDocument()
+  })
+
+  it('routes a doctor to an assigned clinical worklist', async () => {
+    auth.isAuthenticated = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.endsWith('/api/v1/identity/me')) {
+          return Promise.resolve(
+            createJsonResponse({
+              userProfileId: 7,
+              displayName: 'Maya Chen',
+              role: 'doctor',
+            }),
+          )
+        }
+
+        return Promise.resolve(
+          createJsonResponse({
+            items: [
+              {
+                appointmentId: 81,
+                patientDisplayName: 'Avery Brooks',
+                startsAtUtc: '2035-09-08T16:00:00Z',
+                endsAtUtc: '2035-09-08T16:45:00Z',
+                reason: 'Medication follow-up',
+                appointmentStatus: 'Scheduled',
+                appointmentVersion: 920,
+                consultation: null,
+              },
+              {
+                appointmentId: 82,
+                patientDisplayName: 'Jordan Lee',
+                startsAtUtc: '2035-09-08T17:00:00Z',
+                endsAtUtc: '2035-09-08T17:45:00Z',
+                reason: 'Blood pressure review',
+                appointmentStatus: 'InProgress',
+                appointmentVersion: 921,
+                consultation: { id: 91, status: 'Draft', version: 922 },
+              },
+            ],
+            page: 1,
+            pageSize: 50,
+            totalItems: 2,
+            totalPages: 1,
+          }),
+        )
+      }),
+    )
+
+    renderRoute('/app')
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Care queue' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Avery Brooks' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Start consultation' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Continue consultation' })).toHaveAttribute(
+      'href',
+      '/app/doctor/consultations/91',
+    )
+    expect(screen.getByRole('button', { name: 'All visits' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('does not present an unsupported signed role as a patient', async () => {
+    auth.isAuthenticated = true
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(() => Promise.resolve(createJsonResponse({
+        userProfileId: 9,
+        displayName: 'Alex Morgan',
+        role: 'administrator',
+      }))),
+    )
+
+    renderRoute('/app')
+
+    expect(
+      await screen.findByRole('heading', { name: /administrator experience is not part/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/good day, alex/i)).not.toBeInTheDocument()
+  })
+
+  it('helps a doctor save and deliberately complete a consultation', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    const consultation = {
+      id: 91,
+      status: 'Draft',
+      startedAtUtc: '2035-09-08T16:00:00Z',
+      completedAtUtc: null,
+      version: 100,
+      appointment: {
+        id: 81,
+        startsAtUtc: '2035-09-08T16:00:00Z',
+        endsAtUtc: '2035-09-08T16:45:00Z',
+        reason: 'Medication follow-up',
+        status: 'InProgress',
+        version: 920,
+      },
+      patient: {
+        displayName: 'Avery Brooks',
+        medicalRecordNumber: 'MRN-001',
+        dateOfBirth: '1990-01-01',
+        allergySummary: 'Penicillin',
+      },
+      outcome: null,
+      clinicalNotes: null,
+      patientSummary: null,
+      careInstructions: null,
+      prescriptions: [],
+    }
+    const fetchMock = vi.fn<typeof fetch>((input, init) => {
+      const url = String(input)
+      if (url.endsWith('/api/v1/consultations/91') && init?.method === 'PUT') {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>
+        return Promise.resolve(createJsonResponse({ ...consultation, ...body, version: 101 }))
+      }
+      if (url.endsWith('/api/v1/consultations/91/completion')) {
+        const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+        return Promise.resolve(createJsonResponse({
+          ...consultation,
+          ...body,
+          status: 'Completed',
+          completedAtUtc: '2035-09-08T16:40:00Z',
+          version: 102,
+          appointment: { ...consultation.appointment, status: 'Completed', version: 921 },
+        }))
+      }
+
+      return Promise.resolve(createJsonResponse(consultation))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderRoute('/app/doctor/consultations/91')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Avery Brooks' })).toBeInTheDocument()
+    expect(screen.getByText('Penicillin')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Complete consultation' })).toBeDisabled()
+
+    await user.type(screen.getByLabelText(/^Outcome/), 'Symptoms are improving')
+    await user.type(screen.getByLabelText(/^Clinical notes/), 'Reviewed the synthetic treatment response.')
+    await user.type(screen.getByLabelText(/^Visit summary/), 'Your symptoms are improving.')
+    await user.type(screen.getByLabelText(/^Care instructions/), 'Continue the current plan and follow up as scheduled.')
+
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument()
+    const confirmNavigation = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    await user.click(screen.getByRole('link', { name: 'Harbor Care home' }))
+    expect(confirmNavigation).toHaveBeenCalledWith(
+      'Leave without saving your consultation changes?',
+    )
+    expect(screen.getByRole('heading', { level: 1, name: 'Avery Brooks' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
+    expect(await screen.findByText(/draft saved/i)).toBeInTheDocument()
+    expect(screen.getByText('All changes saved')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Complete consultation' }))
+    const completionDialog = screen.getByRole('dialog', { name: 'Complete this consultation?' })
+    expect(within(completionDialog).getByRole('button', { name: 'Go back' })).toHaveFocus()
+    await user.click(within(completionDialog).getByRole('button', { name: 'Complete consultation' }))
+
+    expect(await screen.findByText(/consultation completed/i)).toBeInTheDocument()
+    expect(screen.getByText('Completed record')).toBeInTheDocument()
+    expect(screen.getByLabelText('Search RxNorm medications')).toBeInTheDocument()
+  })
+
+  it('explains fallback medication data and confirms prescription changes', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    const consultation = {
+      id: 91,
+      status: 'Completed',
+      startedAtUtc: '2035-09-08T16:00:00Z',
+      completedAtUtc: '2035-09-08T16:40:00Z',
+      version: 102,
+      appointment: {
+        id: 81,
+        startsAtUtc: '2035-09-08T16:00:00Z',
+        endsAtUtc: '2035-09-08T16:45:00Z',
+        reason: 'Medication follow-up',
+        status: 'Completed',
+        version: 921,
+      },
+      patient: {
+        displayName: 'Avery Brooks',
+        medicalRecordNumber: 'MRN-001',
+        dateOfBirth: '1990-01-01',
+        allergySummary: 'Penicillin',
+      },
+      outcome: 'Symptoms are improving',
+      clinicalNotes: 'Reviewed the synthetic treatment response.',
+      patientSummary: 'Your symptoms are improving.',
+      careInstructions: 'Continue the current plan.',
+      prescriptions: [],
+    }
+    const issuedPrescription = {
+      id: 44,
+      consultationId: 91,
+      medicationId: 12,
+      rxCui: '308192',
+      medicationDisplayName: 'Amoxicillin 500 MG Oral Capsule',
+      dose: '500 mg',
+      instructions: 'Take one capsule by mouth twice daily.',
+      quantity: 14,
+      status: 'Issued',
+      issuedAtUtc: '2035-09-08T16:42:00Z',
+      cancelledAtUtc: null,
+      fulfillmentStatus: 'Pending',
+      version: 300,
+    }
+    const fetchMock = vi.fn<typeof fetch>((input, init) => {
+      const url = String(input)
+      if (url.includes('/api/v1/medications?')) {
+        return Promise.resolve(createJsonResponse({
+          items: [{
+            medicationId: 12,
+            rxCui: '308192',
+            displayName: 'Amoxicillin 500 MG Oral Capsule',
+            conceptType: 'Semantic clinical drug',
+            strength: '500 mg',
+            doseForm: 'Oral Capsule',
+            source: 'SeededFallback',
+          }],
+          catalogStatus: 'Fallback',
+        }))
+      }
+      if (url.endsWith('/api/v1/consultations/91/prescriptions') && init?.method === 'POST') {
+        return Promise.resolve(createJsonResponse(issuedPrescription, 201))
+      }
+      if (url.endsWith('/api/v1/prescriptions/44/cancellation')) {
+        return Promise.resolve(createJsonResponse({
+          ...issuedPrescription,
+          status: 'Cancelled',
+          cancelledAtUtc: '2035-09-08T16:43:00Z',
+          fulfillmentStatus: 'Cancelled',
+          version: 301,
+        }))
+      }
+
+      return Promise.resolve(createJsonResponse(consultation))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderRoute('/app/doctor/consultations/91')
+
+    const search = await screen.findByLabelText('Search RxNorm medications')
+    await user.type(search, 'amoxicillin')
+    expect(
+      await screen.findByText(/RxNorm is temporarily unavailable/i),
+    ).toBeInTheDocument()
+
+    await user.keyboard('{ArrowDown}')
+    expect(search).toHaveAttribute('aria-activedescendant', 'medication-option-0')
+    await user.keyboard('{Enter}')
+    expect(screen.getByLabelText(/^Prescribed dose/)).toHaveValue('')
+    await user.type(screen.getByLabelText(/^Prescribed dose/), '500 mg')
+    await user.type(
+      screen.getByLabelText(/^Directions for the patient/),
+      'Take one capsule by mouth twice daily.',
+    )
+    await user.clear(screen.getByLabelText(/^Quantity/))
+    await user.type(screen.getByLabelText(/^Quantity/), '14')
+    await user.click(screen.getByRole('button', { name: 'Issue prescription' }))
+
+    expect(await screen.findByText(/was issued to the pharmacy queue/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Amoxicillin 500 MG Oral Capsule' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Cancel prescription' }))
+    const cancellationDialog = screen.getByRole('dialog', {
+      name: 'Cancel Amoxicillin 500 MG Oral Capsule?',
+    })
+    await user.click(within(cancellationDialog).getByRole('button', { name: 'Cancel prescription' }))
+
+    const cancellationNotice = await screen.findByText(/was cancelled before dispensing/i)
+    expect(cancellationNotice).toBeInTheDocument()
+    expect(cancellationNotice).toHaveClass('success-notice')
+    expect(cancellationNotice.tagName).toBe('OUTPUT')
+    expect(screen.queryByRole('button', { name: 'Cancel prescription' })).not.toBeInTheDocument()
+  })
+
+  it('reloads current prescription state without leaving a stale conflict alert', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    const prescription = {
+      id: 44,
+      rxCui: '308192',
+      medicationDisplayName: 'Amoxicillin 500 MG Oral Capsule',
+      dose: '500 mg',
+      instructions: 'Take one capsule by mouth twice daily.',
+      quantity: 14,
+      status: 'Issued',
+      issuedAtUtc: '2035-09-08T16:42:00Z',
+      cancelledAtUtc: null,
+      fulfillmentStatus: 'Pending',
+      version: 300,
+    }
+    const consultation = {
+      id: 91,
+      status: 'Completed',
+      startedAtUtc: '2035-09-08T16:00:00Z',
+      completedAtUtc: '2035-09-08T16:40:00Z',
+      version: 102,
+      appointment: {
+        id: 81,
+        startsAtUtc: '2035-09-08T16:00:00Z',
+        endsAtUtc: '2035-09-08T16:45:00Z',
+        reason: 'Medication follow-up',
+        status: 'Completed',
+        version: 921,
+      },
+      patient: {
+        displayName: 'Avery Brooks',
+        medicalRecordNumber: 'MRN-001',
+        dateOfBirth: '1990-01-01',
+        allergySummary: 'Penicillin',
+      },
+      outcome: 'Symptoms are improving',
+      clinicalNotes: 'Reviewed the synthetic treatment response.',
+      patientSummary: 'Your symptoms are improving.',
+      careInstructions: 'Continue the current plan.',
+      prescriptions: [prescription],
+    }
+    let consultationReads = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.endsWith('/api/v1/prescriptions/44/cancellation')) {
+          return Promise.resolve(createJsonResponse({
+            status: 409,
+            title: 'The prescription changed.',
+            detail: 'Reload the current prescription before trying again.',
+            errorCode: 'prescription_changed',
+            traceId: 'trace-prescription-conflict',
+          }, 409, 'application/problem+json'))
+        }
+
+        consultationReads += 1
+        return Promise.resolve(createJsonResponse(consultation))
+      }),
+    )
+
+    renderRoute('/app/doctor/consultations/91')
+
+    await user.click(await screen.findByRole('button', { name: 'Cancel prescription' }))
+    const dialog = screen.getByRole('dialog', {
+      name: 'Cancel Amoxicillin 500 MG Oral Capsule?',
+    })
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel prescription' }))
+
+    expect(
+      await screen.findByText(/prescription state changed elsewhere/i),
+    ).toBeInTheDocument()
+    expect(consultationReads).toBe(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('guides an authenticated patient through clinician and time selection', async () => {

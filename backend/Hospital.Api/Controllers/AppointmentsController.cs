@@ -1,5 +1,6 @@
 using Hospital.Api.Authentication;
 using Hospital.Api.Contracts;
+using Hospital.Core.Application;
 using Hospital.Core.Scheduling;
 
 using Microsoft.AspNetCore.Authorization;
@@ -44,7 +45,7 @@ public sealed class AppointmentsController(
             return Forbid();
         }
 
-        SchedulingResult<AppointmentPage> result = await listAppointments.ExecuteAsync(
+        ApplicationResult<AppointmentPage> result = await listAppointments.ExecuteAsync(
             localUser.UserProfileId,
             page,
             pageSize,
@@ -53,7 +54,7 @@ public sealed class AppointmentsController(
 
         if (!result.IsSuccess)
         {
-            return SchedulingProblem(result);
+            return ApplicationProblem(result);
         }
 
         AppointmentPage appointments = result.Value!;
@@ -84,7 +85,7 @@ public sealed class AppointmentsController(
             return Forbid();
         }
 
-        SchedulingResult<AppointmentSummary> result = await bookAppointment.ExecuteAsync(
+        ApplicationResult<AppointmentSummary> result = await bookAppointment.ExecuteAsync(
             localUser.UserProfileId,
             request.AvailabilitySlotId,
             request.ExpectedAvailabilityVersion,
@@ -93,7 +94,7 @@ public sealed class AppointmentsController(
 
         if (!result.IsSuccess)
         {
-            return SchedulingProblem(result);
+            return ApplicationProblem(result);
         }
 
         return StatusCode(StatusCodes.Status201Created, ToResponse(result.Value!));
@@ -119,7 +120,7 @@ public sealed class AppointmentsController(
             return Forbid();
         }
 
-        SchedulingResult<AppointmentSummary> result = await cancelAppointment.ExecuteAsync(
+        ApplicationResult<AppointmentSummary> result = await cancelAppointment.ExecuteAsync(
             localUser.UserProfileId,
             appointmentId,
             request.ExpectedVersion,
@@ -129,7 +130,7 @@ public sealed class AppointmentsController(
 
         return result.IsSuccess
             ? Ok(ToResponse(result.Value!))
-            : SchedulingProblem(result);
+            : ApplicationProblem(result);
     }
 
     private static bool TryParseStatus(

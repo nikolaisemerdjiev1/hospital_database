@@ -99,6 +99,7 @@ Core does not reference API or Infrastructure. The API composes the application,
 - [Solution foundation](docs/architecture/solution-foundation.md)
 - [Data and identity foundation](docs/architecture/data-identity-foundation.md)
 - [Patient scheduling vertical slice](docs/architecture/patient-scheduling-slice.md)
+- [Doctor clinical workflow vertical slice](docs/architecture/clinical-workflow-slice.md)
 - [Local development guide](docs/development/getting-started.md)
 - [Legacy project history](docs/history/legacy-java.md)
 

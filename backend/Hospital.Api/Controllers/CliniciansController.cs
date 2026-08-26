@@ -1,5 +1,6 @@
 using Hospital.Api.Authentication;
 using Hospital.Api.Contracts;
+using Hospital.Core.Application;
 using Hospital.Core.Scheduling;
 
 using Microsoft.AspNetCore.Authorization;
@@ -51,7 +52,7 @@ public sealed class CliniciansController(
                 type: "https://www.rfc-editor.org/rfc/rfc9110#name-400-bad-request");
         }
 
-        SchedulingResult<IReadOnlyList<AvailabilitySummary>> result =
+        ApplicationResult<IReadOnlyList<AvailabilitySummary>> result =
             await listAvailability.ExecuteAsync(
                 clinicianProfileId,
                 from.Value,
@@ -60,7 +61,7 @@ public sealed class CliniciansController(
 
         if (!result.IsSuccess)
         {
-            return SchedulingProblem(result);
+            return ApplicationProblem(result);
         }
 
         return Ok(result.Value!.Select(static slot => new AvailabilityResponse(

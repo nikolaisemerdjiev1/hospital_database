@@ -1,3 +1,4 @@
+using Hospital.Core.Application;
 using Hospital.Core.Persistence;
 
 using Microsoft.EntityFrameworkCore;
@@ -8,7 +9,7 @@ public sealed class ListPatientAppointmentsUseCase(
     IApplicationDbContext applicationDbContext,
     TimeProvider timeProvider)
 {
-    public async Task<SchedulingResult<AppointmentPage>> ExecuteAsync(
+    public async Task<ApplicationResult<AppointmentPage>> ExecuteAsync(
         long userProfileId,
         int page,
         int pageSize,
@@ -17,7 +18,7 @@ public sealed class ListPatientAppointmentsUseCase(
     {
         if (page < 1 || pageSize is < 1 or > 50)
         {
-            return SchedulingResult.Validation<AppointmentPage>(
+            return ApplicationResult.Validation<AppointmentPage>(
                 "invalid_pagination",
                 "Page must be at least 1 and pageSize must be between 1 and 50.");
         }
@@ -25,7 +26,7 @@ public sealed class ListPatientAppointmentsUseCase(
         long itemsToSkip = (long)(page - 1) * pageSize;
         if (itemsToSkip > int.MaxValue)
         {
-            return SchedulingResult.Validation<AppointmentPage>(
+            return ApplicationResult.Validation<AppointmentPage>(
                 "invalid_pagination",
                 "The requested page is outside the supported pagination range.");
         }
@@ -38,7 +39,7 @@ public sealed class ListPatientAppointmentsUseCase(
 
         if (!patientProfileId.HasValue)
         {
-            return SchedulingResult.NotFound<AppointmentPage>(
+            return ApplicationResult.NotFound<AppointmentPage>(
                 "patient_profile_not_found",
                 "The patient profile was not found.");
         }
@@ -85,7 +86,7 @@ public sealed class ListPatientAppointmentsUseCase(
             ? 0
             : (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        return SchedulingResult.Success(new AppointmentPage(
+        return ApplicationResult.Success(new AppointmentPage(
             items,
             page,
             pageSize,
