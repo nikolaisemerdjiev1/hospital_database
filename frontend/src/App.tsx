@@ -16,6 +16,9 @@ import {
 } from './api/scheduling'
 import { DoctorWorklistPage } from './features/doctor/DoctorWorklistPage'
 import { ConsultationPage } from './features/doctor/ConsultationPage'
+import { PatientMedications } from './features/patient/PatientMedications'
+import { PharmacyQueuePage } from './features/pharmacy/PharmacyQueuePage'
+import { FulfillmentDetailPage } from './features/pharmacy/FulfillmentDetailPage'
 import { NavigationGuardProvider } from './navigation/NavigationGuard'
 import './App.css'
 
@@ -181,6 +184,7 @@ function WorkspaceIndexPage() {
 
   const role = identity.role.toLowerCase()
   if (role === 'doctor') return <Navigate to="/app/doctor" replace />
+  if (role === 'pharmacist') return <Navigate to="/app/pharmacy" replace />
   if (role === 'patient') return <DashboardPage />
 
   return (
@@ -403,6 +407,8 @@ function DashboardPage() {
           </div>
         )}
       </section>
+
+      <PatientMedications />
 
       <section className="itinerary" aria-labelledby="itinerary-title">
         <div className="section-heading">
@@ -715,6 +721,22 @@ function App() {
           element={
             <ProtectedRoute>
               <ConsultationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/pharmacy"
+          element={
+            <ProtectedRoute>
+              <PharmacyQueuePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/app/pharmacy/fulfillments/:fulfillmentId"
+          element={
+            <ProtectedRoute>
+              <FulfillmentDetailPage />
             </ProtectedRoute>
           }
         />

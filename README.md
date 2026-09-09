@@ -28,7 +28,7 @@ Patient books an appointment
 
 ## Current status
 
-Milestone 3 builds the first complete patient scheduling vertical slice. The repository now contains:
+Milestone 5 completes the coordinated journey from appointment scheduling through pharmacy fulfillment. The repository now contains:
 
 - A .NET 10 solution with API, Core, and Infrastructure boundaries
 - A React 19 and TypeScript application with the initial care-relay experience
@@ -36,14 +36,17 @@ Milestone 3 builds the first complete patient scheduling vertical slice. The rep
 - A normalized coordinated-care domain model with explicit PostgreSQL constraints and indexes
 - EF Core migrations, `xmin` optimistic concurrency, and deterministic synthetic demo data
 - Auth0 JWT validation, fail-closed role policies, and active local-profile resolution
-- Patient-scoped clinician browsing, appointment booking, listing, and cancellation APIs
+- Patient-scoped clinician browsing, appointment booking, listing, cancellation, and prescription-status APIs
 - PostgreSQL-backed double-booking protection and `xmin` stale-update handling
 - An Auth0-protected React care itinerary and accessible three-step booking flow
+- A doctor worklist, consultation workflow, resilient RxNorm medication search, and transactional prescription issuance and cancellation
+- A pharmacist queue with assignment-safe claim, ready, and dispense transitions plus atomic audit logging
+- Patient-safe pharmacy status labels that omit pharmacist identity and internal operational metadata
 - Backend architecture and integration tests plus frontend component and client tests
 - PostgreSQL 18.4 for local development through Docker Compose
 - A non-root production API container and GitHub Actions continuous integration
 
-Milestone 3 completes the authenticated patient scheduling journey and its automated and live validation.
+Milestone 5 completes the authenticated patient, doctor, and pharmacist handoff with automated PostgreSQL integration coverage and live cross-role validation.
 
 ## Run locally
 
@@ -90,7 +93,7 @@ tests/                          Backend architecture and API integration tests
 docs/                           Architecture, development, and project history
 ```
 
-Core does not reference API or Infrastructure. The API composes the application, while Infrastructure will implement Core-owned database and external-service contracts.
+Core does not reference API or Infrastructure. The API composes the application, while Infrastructure implements Core-owned database and external-service contracts.
 
 ## Documentation
 
@@ -100,6 +103,7 @@ Core does not reference API or Infrastructure. The API composes the application,
 - [Data and identity foundation](docs/architecture/data-identity-foundation.md)
 - [Patient scheduling vertical slice](docs/architecture/patient-scheduling-slice.md)
 - [Doctor clinical workflow vertical slice](docs/architecture/clinical-workflow-slice.md)
+- [Pharmacy fulfillment vertical slice](docs/architecture/pharmacy-fulfillment-slice.md)
 - [Local development guide](docs/development/getting-started.md)
 - [Legacy project history](docs/history/legacy-java.md)
 

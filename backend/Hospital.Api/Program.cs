@@ -6,6 +6,7 @@ using Hospital.Api.ErrorHandling;
 using Hospital.Api.Middleware;
 using Hospital.Core.Consultations;
 using Hospital.Core.Medications;
+using Hospital.Core.Pharmacy;
 using Hospital.Core.Prescriptions;
 using Hospital.Core.Scheduling;
 using Hospital.Infrastructure;
@@ -84,6 +85,10 @@ builder.Services.AddScoped<SearchMedicationCatalogUseCase>();
 builder.Services.AddScoped<IssuePrescriptionUseCase>();
 builder.Services.AddScoped<GetDoctorPrescriptionUseCase>();
 builder.Services.AddScoped<CancelPrescriptionUseCase>();
+builder.Services.AddScoped<ListPatientPrescriptionsUseCase>();
+builder.Services.AddScoped<ListPharmacyWorkQueueUseCase>();
+builder.Services.AddScoped<GetPharmacyFulfillmentUseCase>();
+builder.Services.AddScoped<TransitionFulfillmentUseCase>();
 
 builder.Services.AddCors(options =>
 {

@@ -1,0 +1,269 @@
+.patient-medications {
+  margin-bottom: 2rem;
+  padding: clamp(1.5rem, 4vw, 2.6rem);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem 0.5rem 2.2rem 0.5rem;
+}
+
+.patient-medications__heading {
+  margin-bottom: 0.65rem;
+}
+
+.patient-medications__summary {
+  max-width: 680px;
+  margin-bottom: 1.7rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.patient-medications__list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  list-style: none;
+}
+
+.patient-prescription {
+  height: 100%;
+  position: relative;
+  background: white;
+  border: 1px solid var(--line);
+  border-top: 5px solid var(--teal);
+  border-radius: 0.35rem 0.35rem 1.5rem 0.35rem;
+  overflow: hidden;
+}
+
+.patient-prescription__topline {
+  min-height: 3.4rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  background: var(--mist);
+}
+
+.patient-prescription__topline > span:last-child {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.patient-prescription__status {
+  width: fit-content;
+  padding: 0.32rem 0.58rem;
+  color: #145751;
+  background: #d9f1eb;
+  border-radius: 999px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.patient-prescription__status--review {
+  color: #6b4a0a;
+  background: #f8e7bf;
+}
+
+.patient-prescription__status--ready {
+  color: #174c48;
+  background: #bfe8de;
+  box-shadow: inset 0 0 0 1px #7fc4b7;
+}
+
+.patient-prescription__status--dispensed,
+.patient-prescription__status--cancelled {
+  color: #536966;
+  background: #e4ecea;
+}
+
+.patient-prescription__body {
+  padding: 1.25rem;
+}
+
+.patient-prescription__body .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.patient-prescription h3 {
+  margin-bottom: 0.55rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.28rem;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.patient-prescription__explanation {
+  min-height: 3rem;
+  margin-bottom: 1.15rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.patient-prescription__facts {
+  margin: 0 0 1.15rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  border-block: 1px solid var(--line);
+}
+
+.patient-prescription__facts > div {
+  padding: 0.85rem 0.65rem;
+  border-right: 1px solid var(--line);
+}
+
+.patient-prescription__facts > div:first-child {
+  padding-left: 0;
+}
+
+.patient-prescription__facts > div:last-child {
+  border-right: 0;
+}
+
+.patient-prescription__facts dt,
+.patient-prescription__directions > span {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.patient-prescription__facts dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.patient-prescription__directions p {
+  margin: 0.35rem 0 0;
+  line-height: 1.55;
+}
+
+.patient-medications__state {
+  min-height: 210px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--mist);
+  border: 1px dashed var(--line);
+  border-radius: 0.4rem 0.4rem 1.5rem 0.4rem;
+}
+
+.patient-medications__state .loading-orbit {
+  width: 2.6rem;
+  height: 2.6rem;
+  margin-bottom: 1rem;
+}
+
+.patient-medications__state h3 {
+  margin-bottom: 0.35rem;
+  font-family: 'Manrope Variable', sans-serif;
+}
+
+.patient-medications__state p {
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.patient-medications__state--error {
+  background: #fbe9e7;
+  border-color: #dfaaa6;
+}
+
+.patient-medications__empty-mark {
+  width: 3.1rem;
+  height: 3.1rem;
+  margin-bottom: 0.8rem;
+  display: inline-grid;
+  place-items: center;
+  color: white;
+  background: var(--teal);
+  border-radius: 50%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.patient-medications__pagination {
+  margin-top: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.patient-medications__pagination p {
+  min-width: 8rem;
+  margin: 0;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.patient-medications__pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 860px) {
+  .patient-medications__list {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-prescription__explanation {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .patient-prescription__topline {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .patient-prescription__topline > span:last-child {
+    text-align: left;
+  }
+
+  .patient-prescription__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .patient-prescription__facts > div,
+  .patient-prescription__facts > div:first-child {
+    padding: 0.75rem 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .patient-prescription__facts > div:last-child {
+    border-bottom: 0;
+  }
+
+  .patient-medications__pagination {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .patient-medications__pagination p {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  .patient-medications__pagination .secondary-button {
+    width: 100%;
+  }
+}

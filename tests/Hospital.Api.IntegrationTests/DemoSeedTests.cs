@@ -24,7 +24,7 @@ public sealed class DemoSeedTests
             DemoSeedOptions options = CreateOptions();
             await using (ApplicationDbContext context = database.CreateContext())
             {
-                DatabaseInitializer initializer = new(context);
+                DatabaseInitializer initializer = new(context, TimeProvider.System);
                 await initializer.InitializeAsync(options);
             }
 
@@ -32,7 +32,7 @@ public sealed class DemoSeedTests
 
             await using (ApplicationDbContext context = database.CreateContext())
             {
-                DatabaseInitializer initializer = new(context);
+                DatabaseInitializer initializer = new(context, TimeProvider.System);
                 await initializer.InitializeAsync(options);
             }
 
@@ -48,7 +48,7 @@ public sealed class DemoSeedTests
 
             await using (ApplicationDbContext context = database.CreateContext())
             {
-                DatabaseInitializer initializer = new(context);
+                DatabaseInitializer initializer = new(context, TimeProvider.System);
                 InvalidOperationException exception =
                     await Assert.ThrowsAsync<InvalidOperationException>(
                         () => initializer.InitializeAsync(options));
@@ -81,7 +81,7 @@ public sealed class DemoSeedTests
         };
 
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => _ = options.ValidateAndGetAnchorDate());
+            () => _ = options.ValidateAndGetAnchorDate(new DateOnly(2030, 2, 15)));
         Assert.Contains("must be unique", exception.Message, StringComparison.Ordinal);
     }
 
@@ -102,7 +102,7 @@ public sealed class DemoSeedTests
         };
 
         InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
-            () => _ = options.ValidateAndGetAnchorDate());
+            () => _ = options.ValidateAndGetAnchorDate(new DateOnly(2030, 2, 15)));
         Assert.Contains("whitespace", exception.Message, StringComparison.Ordinal);
     }
 
@@ -136,7 +136,7 @@ public sealed class DemoSeedTests
 
             await using (ApplicationDbContext context = database.CreateContext())
             {
-                DatabaseInitializer initializer = new(context);
+                DatabaseInitializer initializer = new(context, TimeProvider.System);
                 InvalidOperationException exception =
                     await Assert.ThrowsAsync<InvalidOperationException>(
                         () => initializer.InitializeAsync(CreateOptions()));
@@ -159,6 +159,78 @@ public sealed class DemoSeedTests
         }
     }
 
+    [Fact]
+    public void SeedOptionsResolveTodayAgainstTheSuppliedUtcDate()
+    {
+        DemoSeedOptions baseline = CreateOptions();
+        DemoSeedOptions options = new()
+        {
+            AnchorDate = "today",
+            Subjects = baseline.Subjects,
+        };
+        DateOnly currentUtcDate = new(2031, 6, 12);
+
+        DateOnly anchorDate = options.ValidateAndGetAnchorDate(currentUtcDate);
+
+        Assert.Equal(currentUtcDate, anchorDate);
+    }
+
+    [Fact]
+    public async Task TodayAnchorSeedsBookableAvailabilityWithinTheNextThirtyOneDays()
+    {
+        PostgreSqlDatabaseFixture database = new();
+        await database.InitializeAsync();
+        DateTimeOffset currentUtcTime = new(2031, 6, 12, 12, 0, 0, TimeSpan.Zero);
+        DemoSeedOptions baseline = CreateOptions();
+        DemoSeedOptions options = new()
+        {
+            AnchorDate = "today",
+            Subjects = baseline.Subjects,
+        };
+
+        try
+        {
+            await using (ApplicationDbContext context = database.CreateContext())
+            {
+                DatabaseInitializer initializer = new(
+                    context,
+                    new FixedTimeProvider(currentUtcTime));
+                await initializer.InitializeAsync(options);
+            }
+
+            await using (ApplicationDbContext context = database.CreateContext())
+            {
+                DateTimeOffset windowEnd = currentUtcTime.AddDays(31);
+                AvailabilitySlot[] availableSlots = await context.AvailabilitySlots
+                    .AsNoTracking()
+                    .Where(slot =>
+                        slot.StartsAtUtc >= currentUtcTime &&
+                        slot.StartsAtUtc < windowEnd &&
+                        !context.Appointments.Any(appointment =>
+                            appointment.AvailabilitySlotId == slot.Id &&
+                            appointment.Status != AppointmentStatus.Cancelled))
+                    .ToArrayAsync();
+                int neverBookedSlotCount = await context.AvailabilitySlots
+                    .AsNoTracking()
+                    .CountAsync(slot =>
+                        slot.StartsAtUtc >= currentUtcTime &&
+                        slot.StartsAtUtc < windowEnd &&
+                        !context.Appointments.Any(appointment =>
+                            appointment.AvailabilitySlotId == slot.Id));
+
+                Assert.Equal(24, neverBookedSlotCount);
+                Assert.True(availableSlots.Length >= neverBookedSlotCount);
+                Assert.Equal(
+                    10,
+                    availableSlots.Select(slot => slot.ClinicianProfileId).Distinct().Count());
+            }
+        }
+        finally
+        {
+            await database.DisposeAsync();
+        }
+    }
+
     private static DemoSeedOptions CreateOptions() =>
         new()
         {
@@ -171,6 +243,11 @@ public sealed class DemoSeedTests
                 Administrator = "test-auth|administrator",
             },
         };
+
+    private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utcNow;
+    }
 
     private static async Task AssertExpectedDatasetAsync(PostgreSqlDatabaseFixture database)
     {

@@ -74,6 +74,10 @@ Apply pending EF Core migrations and create the deterministic fictional dataset:
 dotnet run --project backend/Hospital.Api -- --initialize-database
 ```
 
+Development uses `DemoSeed:AnchorDate="today"`, so a newly initialized database includes
+bookable clinician availability in the upcoming 31-day window. Integration tests and other
+repeatable environments may supply an explicit `yyyy-MM-dd` anchor instead.
+
 Initialization is an explicit maintenance mode. It validates the configured demo identity subjects, migrates the database, seeds an empty database in one advisory-locked transaction, and then exits. Running it again is safe: the versioned marker, complete dataset shape, and four identity/profile mappings are verified without duplicating records.
 
 The initializer refuses to add demo records to a partially populated database. Normal `dotnet run --project backend/Hospital.Api` startup never migrates or seeds, which prevents an application replica from racing another replica or unexpectedly changing a production schema.
