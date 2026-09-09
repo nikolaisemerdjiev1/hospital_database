@@ -1,0 +1,680 @@
+.pharmacy-workspace,
+.fulfillment-workspace {
+  width: min(1180px, calc(100% - 3rem));
+  margin: 0 auto;
+  flex: 1;
+  padding: 3.5rem 0 4rem;
+}
+
+.pharmacy-intro {
+  margin-bottom: 2rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.pharmacy-intro > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.pharmacy-intro h1 {
+  margin-bottom: 0.7rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(3.2rem, 7vw, 6.2rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.pharmacy-intro p:last-child {
+  max-width: 690px;
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.pharmacy-shift-strip {
+  margin-bottom: 1.4rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(110px, 0.28fr)) minmax(260px, 1.25fr);
+  color: white;
+  background: var(--deep-navy);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+  overflow: hidden;
+}
+
+.pharmacy-shift-strip > div {
+  padding: 1.2rem 1.35rem;
+  display: grid;
+  gap: 0.25rem;
+  border-right: 1px solid rgb(255 255 255 / 15%);
+}
+
+.pharmacy-shift-strip span,
+.pharmacy-order__reference span {
+  color: #b9d5cf;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pharmacy-shift-strip strong {
+  color: #a5e1d6;
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.7rem;
+}
+
+.pharmacy-shift-strip p {
+  margin: 0;
+  padding: 1.2rem 1.5rem;
+  align-self: center;
+  color: #d4e4e1;
+  line-height: 1.5;
+}
+
+.pharmacy-queue-board {
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem 0.45rem 2.6rem 0.45rem;
+}
+
+.pharmacy-queue-board__heading {
+  margin-bottom: 1.6rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.pharmacy-queue-board__heading > div:first-child {
+  min-width: 260px;
+}
+
+.pharmacy-queue-board__heading .eyebrow {
+  margin-bottom: 0.35rem;
+}
+
+.pharmacy-queue-board__heading h2 {
+  margin: 0;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.045em;
+}
+
+.pharmacy-filters {
+  width: min(100%, 560px);
+  max-width: 560px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  padding: 0.3rem;
+  background: var(--mist);
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
+}
+
+.pharmacy-filters button {
+  min-height: 2.35rem;
+  padding: 0.4rem 0.78rem;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pharmacy-filters button[aria-pressed='true'] {
+  color: white;
+  background: var(--navy);
+}
+
+.pharmacy-orders {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.pharmacy-order {
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: minmax(155px, 0.32fr) minmax(0, 1fr) 90px auto;
+  align-items: center;
+  gap: 1.35rem;
+  padding: 1.2rem 1.3rem;
+  background: white;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--teal);
+  border-radius: 0.35rem;
+}
+
+.pharmacy-order--inreview {
+  border-left-color: var(--gold);
+}
+
+.pharmacy-order--ready {
+  border-left-color: var(--coral);
+}
+
+.pharmacy-order--dispensed,
+.pharmacy-order--cancelled {
+  border-left-color: #91a7a2;
+}
+
+.pharmacy-order__state {
+  display: grid;
+  justify-items: start;
+  gap: 0.55rem;
+}
+
+.pharmacy-order__state time,
+.pharmacy-order__medication > span,
+.pharmacy-order__reference strong {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+}
+
+.pharmacy-status {
+  width: fit-content;
+  padding: 0.3rem 0.55rem;
+  color: #145852;
+  background: #d8eee9;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.pharmacy-status--inreview {
+  color: #6f4c0c;
+  background: #f8e7bf;
+}
+
+.pharmacy-status--ready {
+  color: #7a2e2a;
+  background: #f9dfdc;
+}
+
+.pharmacy-status--dispensed,
+.pharmacy-status--cancelled {
+  color: #425d60;
+  background: #e2ebE9;
+}
+
+.pharmacy-order__medication {
+  min-width: 0;
+}
+
+.pharmacy-order__medication p {
+  margin-bottom: 0.25rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.pharmacy-order__medication h3 {
+  margin-bottom: 0.35rem;
+  overflow-wrap: anywhere;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: -0.025em;
+}
+
+.pharmacy-order__reference {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.pharmacy-order__reference span {
+  color: var(--muted);
+}
+
+.pharmacy-order__action {
+  min-width: 160px;
+  text-align: center;
+}
+
+.pharmacy-loading {
+  min-height: 300px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  color: var(--muted);
+}
+
+.pharmacy-error {
+  margin-bottom: 1rem;
+  padding: 1rem 1.2rem;
+  color: #682b28;
+  background: #fbe9e7;
+  border-left: 4px solid var(--coral);
+  border-radius: 0.35rem;
+}
+
+.pharmacy-error p {
+  margin: 0.35rem 0 0.75rem;
+}
+
+.pharmacy-error small {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.pharmacy-pagination {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  border-top: 1px solid var(--line);
+}
+
+.pharmacy-pagination span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.fulfillment-topline {
+  margin-bottom: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fulfillment-topline > span {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fulfillment-heading {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.fulfillment-heading h1 {
+  margin-bottom: 0.4rem;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 650;
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+.fulfillment-heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.fulfillment-heading > .pharmacy-status {
+  flex: 0 0 auto;
+  margin-bottom: 0.35rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.fulfillment-rail {
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  color: white;
+  background: var(--deep-navy);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+  list-style: none;
+  overflow: hidden;
+}
+
+.fulfillment-rail li {
+  position: relative;
+  min-height: 92px;
+  padding: 1.05rem 1.15rem;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  border-right: 1px solid rgb(255 255 255 / 14%);
+}
+
+.fulfillment-rail li:last-child {
+  border-right: 0;
+}
+
+.fulfillment-rail li > span {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  color: #bdd8d3;
+  border: 1px solid #658983;
+  border-radius: 50%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.fulfillment-rail li.is-complete > span {
+  color: var(--deep-navy);
+  background: #96dacd;
+  border-color: #96dacd;
+}
+
+.fulfillment-rail li.is-current {
+  background: rgb(255 255 255 / 8%);
+  box-shadow: inset 0 -4px var(--gold);
+}
+
+.fulfillment-rail div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.fulfillment-rail small {
+  color: #a8c2bd;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fulfillment-rail strong {
+  font-size: 0.94rem;
+}
+
+.pharmacy-success,
+.pharmacy-update,
+.pharmacy-terminal-note {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1.1rem;
+  border-left: 4px solid var(--teal);
+  border-radius: 0.35rem;
+}
+
+.pharmacy-success {
+  color: #14554f;
+  background: #dff1ec;
+}
+
+.pharmacy-update {
+  color: #62460f;
+  background: #f8e9c7;
+  border-left-color: var(--gold);
+}
+
+.pharmacy-terminal-note {
+  color: #682b28;
+  background: #fbe9e7;
+  border-left-color: var(--coral);
+}
+
+.fulfillment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.order-review,
+.fulfillment-action-panel {
+  padding: clamp(1.4rem, 4vw, 2.3rem);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem 0.45rem 2.2rem 0.45rem;
+}
+
+.order-review__heading {
+  margin-bottom: 1.3rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.order-review__heading .eyebrow {
+  margin-bottom: 0.3rem;
+}
+
+.order-review__heading h2,
+.fulfillment-action-panel h2 {
+  margin: 0;
+  color: var(--deep-navy);
+  font-family: 'Manrope Variable', sans-serif;
+  font-size: clamp(1.7rem, 4vw, 2.55rem);
+  letter-spacing: -0.045em;
+}
+
+.order-review__heading code {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+}
+
+.allergy-banner {
+  margin-bottom: 1.4rem;
+  padding: 1rem;
+  display: grid;
+  grid-template-columns: 2.3rem 1fr;
+  align-items: start;
+  gap: 0.85rem;
+  color: #4f3a0d;
+  background: #f7e7bd;
+  border: 1px solid #ddc27f;
+  border-radius: 0.4rem;
+}
+
+.allergy-banner > span {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  color: #5b430f;
+  border: 2px solid #9a7422;
+  border-radius: 50%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 800;
+}
+
+.allergy-banner p {
+  margin: 0.25rem 0 0;
+}
+
+.order-facts,
+.fulfillment-timestamps {
+  margin: 0;
+  display: grid;
+}
+
+.order-facts > div {
+  padding: 0.9rem 0;
+  display: grid;
+  grid-template-columns: minmax(105px, 0.28fr) minmax(0, 1fr);
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.order-facts dt,
+.fulfillment-timestamps dt {
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.order-facts dd,
+.fulfillment-timestamps dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.fulfillment-action-panel {
+  position: sticky;
+  top: 1.5rem;
+  color: white;
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+.fulfillment-action-panel .eyebrow {
+  color: #9fddd2;
+}
+
+.fulfillment-action-panel h2 {
+  color: white;
+  font-size: 1.65rem;
+}
+
+.fulfillment-action-panel > div:first-child > p:last-child {
+  margin: 0.7rem 0 0;
+  color: #c5d9d5;
+  line-height: 1.5;
+}
+
+.fulfillment-primary-action {
+  width: 100%;
+  margin: 1.4rem 0;
+  color: var(--deep-navy);
+  background: #9edfd3;
+  box-shadow: none;
+}
+
+.fulfillment-timestamps > div {
+  padding: 0.72rem 0;
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.fulfillment-timestamps dt {
+  color: #a9c5c0;
+}
+
+.fulfillment-timestamps dd {
+  color: #e1eeeb;
+  font-size: 0.84rem;
+}
+
+.dispense-confirmation {
+  margin: 0;
+}
+
+.dispense-confirmation::backdrop {
+  background: rgb(9 43 54 / 42%);
+}
+
+.dispense-confirmation > div:first-child > p:last-child {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+  .pharmacy-intro,
+  .pharmacy-queue-board__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pharmacy-filters {
+    width: 100%;
+    max-width: none;
+  }
+
+  .pharmacy-shift-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .pharmacy-shift-strip p {
+    grid-column: 1 / -1;
+  }
+
+  .pharmacy-order {
+    grid-template-columns: 145px minmax(0, 1fr) auto;
+  }
+
+  .pharmacy-order__reference {
+    display: none;
+  }
+
+  .fulfillment-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .fulfillment-action-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .pharmacy-workspace,
+  .fulfillment-workspace {
+    width: min(100% - 2rem, 1180px);
+    padding-top: 2.5rem;
+  }
+
+  .pharmacy-shift-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pharmacy-shift-strip > div:nth-child(even) {
+    border-right: 0;
+  }
+
+  .pharmacy-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pharmacy-order {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .pharmacy-order__action {
+    width: 100%;
+  }
+
+  .fulfillment-topline,
+  .fulfillment-heading,
+  .order-review__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fulfillment-rail {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fulfillment-rail li:nth-child(2) {
+    border-right: 0;
+  }
+
+  .fulfillment-rail li:nth-child(n + 3) {
+    border-top: 1px solid rgb(255 255 255 / 14%);
+  }
+
+  .order-facts > div {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .dispense-confirmation {
+    right: 1rem;
+    bottom: 1rem;
+    width: calc(100% - 2rem);
+  }
+}

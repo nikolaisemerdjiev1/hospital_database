@@ -137,6 +137,29 @@ describe('App', () => {
           )
         }
 
+        if (url.includes('/api/v1/prescriptions?')) {
+          return Promise.resolve(
+            createJsonResponse({
+              items: [
+                {
+                  id: 41,
+                  medicationDisplayName: 'Lisinopril 10 MG Oral Tablet',
+                  dose: '10 mg',
+                  instructions: 'Take one tablet by mouth daily.',
+                  quantity: 30,
+                  issuedAtUtc: '2035-09-07T16:00:00Z',
+                  cancelledAtUtc: null,
+                  pharmacyStatus: 'Ready for pickup',
+                },
+              ],
+              page: 1,
+              pageSize: 4,
+              totalItems: 1,
+              totalPages: 1,
+            }),
+          )
+        }
+
         return Promise.resolve(
           createJsonResponse({
             items: [futureAppointment],
@@ -156,6 +179,9 @@ describe('App', () => {
     expect(screen.getByText('Annual wellness visit')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Cancel visit' })).toBeInTheDocument()
     expect(screen.getByText(/local timezone/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Your prescription handoffs' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Lisinopril 10 MG Oral Tablet' })).toBeInTheDocument()
+    expect(screen.getByText('Ready for pickup')).toBeInTheDocument()
   })
 
   it('routes a doctor to an assigned clinical worklist', async () => {
@@ -222,6 +248,240 @@ describe('App', () => {
       'aria-pressed',
       'true',
     )
+  })
+
+  it('routes a pharmacist to the dispensing queue and filters work by status', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    const fetchMock = vi.fn<typeof fetch>((input) => {
+      const url = String(input)
+      if (url.endsWith('/api/v1/identity/me')) {
+        return Promise.resolve(createJsonResponse({
+          userProfileId: 8,
+          displayName: 'Riley Morgan',
+          role: 'pharmacist',
+        }))
+      }
+
+      const status = new URL(url).searchParams.get('status')
+      return Promise.resolve(createJsonResponse({
+        items: [
+          {
+            fulfillmentId: status === 'Ready' ? 52 : 51,
+            prescriptionId: status === 'Ready' ? 82 : 81,
+            patientDisplayName: status === 'Ready' ? 'Jordan Lee' : 'Avery Brooks',
+            medicationDisplayName: status === 'Ready'
+              ? 'Metformin 500 MG Oral Tablet'
+              : 'Lisinopril 10 MG Oral Tablet',
+            dose: status === 'Ready' ? '500 mg' : '10 mg',
+            quantity: 30,
+            issuedAtUtc: '2035-09-08T17:00:00Z',
+            fulfillmentStatus: status === 'Ready' ? 'Ready' : 'Pending',
+            createdAtUtc: '2035-09-08T17:01:00Z',
+            version: status === 'Ready' ? 902 : 901,
+          },
+        ],
+        page: 1,
+        pageSize: 20,
+        totalItems: 1,
+        totalPages: 1,
+      }))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    renderRoute('/app')
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Dispensing queue' }),
+    ).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Lisinopril 10 MG Oral Tablet' }))
+      .toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Review and claim' })).toHaveAttribute(
+      'href',
+      '/app/pharmacy/fulfillments/51',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Ready' }))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Metformin 500 MG Oral Tablet' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ready' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(fetchMock.mock.calls.some(([input]) =>
+      new URL(String(input)).searchParams.get('status') === 'Ready'))
+      .toBe(true)
+  })
+
+  it('guides a pharmacist through claim, ready, and confirmed dispensing', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    let fulfillment = {
+      id: 51,
+      status: 'Pending',
+      createdAtUtc: '2035-09-08T17:01:00Z',
+      reviewStartedAtUtc: null as string | null,
+      readyAtUtc: null as string | null,
+      dispensedAtUtc: null as string | null,
+      cancelledAtUtc: null as string | null,
+      version: 901,
+      assignedToCurrentPharmacist: false,
+      patient: { displayName: 'Avery Brooks', allergySummary: 'Penicillin' },
+      prescription: {
+        id: 81,
+        rxCui: '860975',
+        medicationDisplayName: 'Metformin 500 MG Oral Tablet',
+        dose: '500 mg',
+        instructions: 'Take one tablet with breakfast.',
+        quantity: 30,
+        status: 'Issued',
+        issuedAtUtc: '2035-09-08T17:00:00Z',
+        cancelledAtUtc: null,
+        prescriberDisplayName: 'Dr. Maya Chen',
+      },
+    }
+    const transitionTargets: string[] = []
+    const expectedVersions: number[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input, init) => {
+        const url = String(input)
+        if (url.endsWith('/api/v1/identity/me')) {
+          return Promise.resolve(createJsonResponse({
+            userProfileId: 8,
+            displayName: 'Riley Morgan',
+            role: 'pharmacist',
+          }))
+        }
+
+        if (url.endsWith('/api/v1/fulfillments/51/transitions')) {
+          const body = JSON.parse(String(init?.body)) as {
+            targetStatus: 'InReview' | 'Ready' | 'Dispensed'
+            expectedVersion: number
+          }
+          transitionTargets.push(body.targetStatus)
+          expectedVersions.push(body.expectedVersion)
+          fulfillment = {
+            ...fulfillment,
+            status: body.targetStatus,
+            version: fulfillment.version + 1,
+            assignedToCurrentPharmacist: true,
+            reviewStartedAtUtc: body.targetStatus === 'InReview'
+              ? '2035-09-08T17:05:00Z'
+              : fulfillment.reviewStartedAtUtc,
+            readyAtUtc: body.targetStatus === 'Ready'
+              ? '2035-09-08T17:10:00Z'
+              : fulfillment.readyAtUtc,
+            dispensedAtUtc: body.targetStatus === 'Dispensed'
+              ? '2035-09-08T17:15:00Z'
+              : fulfillment.dispensedAtUtc,
+          }
+        }
+
+        return Promise.resolve(createJsonResponse(fulfillment))
+      }),
+    )
+
+    renderRoute('/app/pharmacy/fulfillments/51')
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Avery Brooks' }))
+      .toBeInTheDocument()
+    expect(screen.getByText('Penicillin')).toBeInTheDocument()
+    expect(screen.getByText('Take one tablet with breakfast.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Start review and claim' }))
+    expect(await screen.findByText(/review started.*assigned to you/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Mark ready for pickup' }))
+    expect(await screen.findByText('Order marked ready for pickup.')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Confirm dispensing' }))
+    let dialog = screen.getByRole('dialog', { name: 'Confirm medication was dispensed?' })
+    expect(within(dialog).getByRole('button', { name: 'Go back' })).toHaveFocus()
+    await user.click(within(dialog).getByRole('button', { name: 'Go back' }))
+    expect(screen.getByRole('button', { name: 'Confirm dispensing' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Confirm dispensing' }))
+    dialog = screen.getByRole('dialog', { name: 'Confirm medication was dispensed?' })
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm dispensed' }))
+
+    expect(await screen.findByText(/dispensing recorded.*complete/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'No action needed' })).toBeInTheDocument()
+    expect(transitionTargets).toEqual(['InReview', 'Ready', 'Dispensed'])
+    expect(expectedVersions).toEqual([901, 902, 903])
+  })
+
+  it('refreshes the fulfillment after an optimistic concurrency conflict', async () => {
+    auth.isAuthenticated = true
+    const user = userEvent.setup()
+    const baseFulfillment = {
+      id: 61,
+      status: 'InReview',
+      createdAtUtc: '2035-09-08T17:01:00Z',
+      reviewStartedAtUtc: '2035-09-08T17:05:00Z',
+      readyAtUtc: null,
+      dispensedAtUtc: null,
+      cancelledAtUtc: null,
+      version: 911,
+      assignedToCurrentPharmacist: true,
+      patient: { displayName: 'Jordan Lee', allergySummary: null },
+      prescription: {
+        id: 91,
+        rxCui: '617314',
+        medicationDisplayName: 'Atorvastatin 20 MG Oral Tablet',
+        dose: '20 mg',
+        instructions: 'Take once each evening.',
+        quantity: 30,
+        status: 'Issued',
+        issuedAtUtc: '2035-09-08T17:00:00Z',
+        cancelledAtUtc: null,
+        prescriberDisplayName: 'Dr. Maya Chen',
+      },
+    }
+    let detailReads = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.endsWith('/api/v1/identity/me')) {
+          return Promise.resolve(createJsonResponse({
+            userProfileId: 8,
+            displayName: 'Riley Morgan',
+            role: 'pharmacist',
+          }))
+        }
+        if (url.endsWith('/api/v1/fulfillments/61/transitions')) {
+          return Promise.resolve(createJsonResponse({
+            status: 409,
+            title: 'The request conflicts with current state.',
+            detail: 'This fulfillment changed. Refresh it before trying again.',
+            errorCode: 'fulfillment_changed',
+            traceId: 'trace-fulfillment-conflict',
+          }, 409, 'application/problem+json'))
+        }
+
+        detailReads += 1
+        return Promise.resolve(createJsonResponse(detailReads === 1
+          ? baseFulfillment
+          : {
+              ...baseFulfillment,
+              status: 'Ready',
+              readyAtUtc: '2035-09-08T17:10:00Z',
+              version: 912,
+            }))
+      }),
+    )
+
+    renderRoute('/app/pharmacy/fulfillments/61')
+
+    await user.click(await screen.findByRole('button', { name: 'Mark ready for pickup' }))
+
+    expect(await screen.findByText(/changed in another session.*latest status/i))
+      .toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirm dispensing' })).toBeInTheDocument()
+    expect(detailReads).toBe(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('does not present an unsupported signed role as a patient', async () => {
@@ -714,6 +974,18 @@ describe('App', () => {
               pageSize: 50,
               totalItems: 1,
               totalPages: 1,
+            }),
+          )
+        }
+
+        if (url.includes('/api/v1/prescriptions?')) {
+          return Promise.resolve(
+            createJsonResponse({
+              items: [],
+              page: 1,
+              pageSize: 4,
+              totalItems: 0,
+              totalPages: 0,
             }),
           )
         }

@@ -10,17 +10,22 @@ public sealed class DemoSeedOptions
 
     public DemoIdentitySubjects Subjects { get; init; } = new();
 
-    public DateOnly ValidateAndGetAnchorDate()
+    public DateOnly ValidateAndGetAnchorDate(DateOnly currentUtcDate)
     {
-        if (!DateOnly.TryParseExact(
+        DateOnly anchorDate;
+        if (string.Equals(AnchorDate, "today", StringComparison.OrdinalIgnoreCase))
+        {
+            anchorDate = currentUtcDate;
+        }
+        else if (!DateOnly.TryParseExact(
                 AnchorDate,
                 "yyyy-MM-dd",
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.None,
-                out DateOnly anchorDate))
+                out anchorDate))
         {
             throw new InvalidOperationException(
-                "DemoSeed:AnchorDate must use the yyyy-MM-dd format.");
+                "DemoSeed:AnchorDate must use the yyyy-MM-dd format or the value 'today'.");
         }
 
         string[] subjects =
