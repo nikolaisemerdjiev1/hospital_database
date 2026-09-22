@@ -31,7 +31,7 @@ RUN dotnet publish backend/Hospital.Api/Hospital.Api.csproj \
     --output /app/publish \
     /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0.12-alpine3.24@sha256:6bb0fab0ef31f44f710a668c39c2263ae810f5adf868afa34cbd86815912c7fe AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.12-alpine3.24@sha256:f62a272ac1b46e83f56b8ed0416572f31cd1128e2c4a5e63eb34d348e4a36095 AS final
 WORKDIR /app
 
 ENV ASPNETCORE_HTTP_PORTS=8080 \
