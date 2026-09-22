@@ -1,6 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getSystemStatus } from './system'
+import { getSystemStatus, resolveApiBaseUrl } from './system'
+
+describe('API origin', () => {
+  it('uses the browser origin in production and the separate API in development', () => {
+    expect(resolveApiBaseUrl('', true)).toBe(window.location.origin)
+    expect(resolveApiBaseUrl('', false)).toBe('http://localhost:5050')
+    expect(resolveApiBaseUrl('https://api.example.test', true)).toBe('https://api.example.test')
+  })
+
+  it.each(['https://user:password@example.test', 'https://example.test/api', 'javascript:alert(1)'])(
+    'rejects unsafe or non-origin configuration %s', (value) => {
+      expect(() => resolveApiBaseUrl(value, true)).toThrow(/VITE_API_BASE_URL/)
+    },
+  )
+})
 
 function createJsonResponse(body: unknown, status = 200): Response {
   return {

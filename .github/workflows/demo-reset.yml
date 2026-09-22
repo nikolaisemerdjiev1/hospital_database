@@ -1,0 +1,58 @@
+name: Reset synthetic demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full current main SHA, also the stable deployed release
+        required: true
+        type: string
+      confirmation:
+        description: Type RESET_SYNTHETIC_DEMO to replace all synthetic care data
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hospital-production-maintenance
+  cancel-in-progress: false
+
+jobs:
+  reset:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'RESET_SYNTHETIC_DEMO'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RESET_AUTHORIZATION: ${{ inputs.confirmation }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_CONTAINER_APP_ENVIRONMENT: ${{ vars.AZURE_CONTAINER_APP_ENVIRONMENT }}
+      AZURE_CONTAINER_APP_NAME: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+      APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+      VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+      VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+      AUTH0_ROLE_CLAIM: ${{ vars.AUTH0_ROLE_CLAIM }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Require exact main and successful CI and CodeQL before Azure authentication
+        run: python3 scripts/release_gate.py
+      - name: Authenticate through the existing production OIDC identity
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Validate deployed image, pause schedule, reset once and verify
+        run: python3 scripts/demo_reset.py --execute

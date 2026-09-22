@@ -23,7 +23,7 @@ Patient books an appointment
 - RxNorm medication search, with openFDA planned for Phase 2
 - Docker-based local development
 - GitHub Actions CI/CD
-- Azure Static Web Apps and Azure Container Apps
+- Azure Container Apps serving the React SPA and .NET API
 - Neon PostgreSQL
 
 ## Current status
@@ -98,6 +98,7 @@ Core does not reference API or Infrastructure. The API composes the application,
 ## Documentation
 
 - [Modernization blueprint](docs/architecture/modernization-blueprint.md)
+- [Portfolio release architecture](docs/architecture/portfolio-release.md)
 - [Architecture decision log](docs/architecture/decision-log.md)
 - [Solution foundation](docs/architecture/solution-foundation.md)
 - [Data and identity foundation](docs/architecture/data-identity-foundation.md)
@@ -105,6 +106,10 @@ Core does not reference API or Infrastructure. The API composes the application,
 - [Doctor clinical workflow vertical slice](docs/architecture/clinical-workflow-slice.md)
 - [Pharmacy fulfillment vertical slice](docs/architecture/pharmacy-fulfillment-slice.md)
 - [Local development guide](docs/development/getting-started.md)
+- [Quality and security gates](docs/development/quality-gates.md)
+- [Azure bootstrap and cost controls](docs/development/azure-bootstrap.md)
+- [Combined React SPA and API hosting](docs/development/combined-hosting.md)
+- [Delivery automation and production setup](docs/development/delivery.md)
 - [Legacy project history](docs/history/legacy-java.md)
 
 ## Legacy project

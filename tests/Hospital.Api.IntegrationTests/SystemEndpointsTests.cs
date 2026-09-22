@@ -21,6 +21,7 @@ public sealed class SystemEndpointsTests(HospitalApiFactory factory)
         Assert.Equal("Hospital Coordination API", response.Service);
         Assert.Equal("online", response.Status);
         Assert.NotEmpty(response.Environment);
+        Assert.Equal("local", response.Revision);
     }
 
     [Fact]
@@ -60,6 +61,16 @@ public sealed class SystemEndpointsTests(HospitalApiFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         Assert.True(document.RootElement.TryGetProperty("traceId", out _));
+    }
+
+    [Fact]
+    public async Task NoHttpDemoResetEndpointExists()
+    {
+        HttpResponseMessage response = await client.PostAsync(
+            "/api/v1/system/reset-demo-data",
+            content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -117,5 +128,25 @@ public sealed class SystemEndpointsTests(HospitalApiFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
+        Assert.False(response.Headers.Contains("Access-Control-Expose-Headers"));
+    }
+
+    [Fact]
+    public async Task ApiResponsesIncludeDefensiveHeadersAndDisableCaching()
+    {
+        HttpResponseMessage response = await client.GetAsync("/api/v1/system/status");
+
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Equal("DENY", Assert.Single(response.Headers.GetValues("X-Frame-Options")));
+        Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
+        Assert.Contains(
+            "frame-ancestors 'none'",
+            Assert.Single(response.Headers.GetValues("Content-Security-Policy")),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "camera=()",
+            Assert.Single(response.Headers.GetValues("Permissions-Policy")),
+            StringComparison.Ordinal);
     }
 }

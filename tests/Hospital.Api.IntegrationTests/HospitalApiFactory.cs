@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Hospital.Api.IntegrationTests;
 
-public sealed class HospitalApiFactory : WebApplicationFactory<Program>
+public class HospitalApiFactory : WebApplicationFactory<Program>
 {
     public TestLogSink LogSink { get; } = new();
 

@@ -7,9 +7,14 @@ export interface SystemStatus {
 
 const defaultApiBaseUrl = 'http://localhost:5050'
 
-function resolveApiBaseUrl(): string {
-  const configuredUrl = import.meta.env.VITE_API_BASE_URL?.trim()
-  const parsedUrl = new URL(configuredUrl || defaultApiBaseUrl)
+export function resolveApiBaseUrl(
+  configuredUrl = import.meta.env.VITE_API_BASE_URL,
+  production = import.meta.env.PROD,
+): string {
+  const normalized = configuredUrl?.trim()
+  // Production uses the document's origin; local Vite still talks to the separate API.
+  if (!normalized && production) return window.location.origin
+  const parsedUrl = new URL(normalized || defaultApiBaseUrl)
 
   if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
     throw new Error('VITE_API_BASE_URL must use HTTP or HTTPS.')

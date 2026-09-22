@@ -1,6 +1,7 @@
 import { Auth0Provider, type AppState } from '@auth0/auth0-react'
 import type { PropsWithChildren } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { SessionRecovery } from './SessionRecovery'
 
 function requirePublicSetting(name: string, value: string | undefined): string {
   const normalized = value?.trim()
@@ -34,9 +35,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }}
       onRedirectCallback={handleRedirect}
       useRefreshTokens
+      // Recover the Auth0 session after a reload clears the in-memory token cache.
+      useRefreshTokensFallback
       cacheLocation="memory"
     >
-      {children}
+      <SessionRecovery>{children}</SessionRecovery>
     </Auth0Provider>
   )
 }

@@ -182,7 +182,7 @@ export function DoctorWorklistPage() {
           <p className="eyebrow">Doctor workspace</p>
           <h1>Care queue</h1>
           <p>
-            {identity ? `Good day, ${identity.displayName.split(' ')[0]}. ` : ''}
+            {identity ? `Good day, ${identity.displayName}. ` : ''}
             Pick up the next visit without losing the handoff.
           </p>
         </div>

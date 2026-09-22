@@ -68,9 +68,33 @@ internal static class DemoDataSeeder
     {
         await using IDbContextTransaction transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        await AcquireAdvisoryLockAsync(dbContext, cancellationToken);
+        await SeedWithinCurrentTransactionAsync(
+            dbContext,
+            options,
+            anchorDate,
+            cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    internal static async Task AcquireAdvisoryLockAsync(
+        ApplicationDbContext dbContext,
+        CancellationToken cancellationToken) =>
         await dbContext.Database.ExecuteSqlRawAsync(
             SeedAdvisoryLockSql,
             cancellationToken);
+
+    internal static async Task SeedWithinCurrentTransactionAsync(
+        ApplicationDbContext dbContext,
+        DemoSeedOptions options,
+        DateOnly anchorDate,
+        CancellationToken cancellationToken)
+    {
+        if (dbContext.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "Demo data must be seeded inside an explicit database transaction.");
+        }
 
         bool alreadySeeded = await dbContext.AuditEvents
             .AsNoTracking()
@@ -82,9 +106,11 @@ internal static class DemoDataSeeder
 
         if (alreadySeeded)
         {
-            await VerifyConfiguredIdentitiesAsync(dbContext, options, cancellationToken);
-            await VerifyDatasetShapeAsync(dbContext, cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            await VerifyDatasetAsync(
+                dbContext,
+                options,
+                anchorDate,
+                cancellationToken);
             return;
         }
 
@@ -175,7 +201,11 @@ internal static class DemoDataSeeder
             anchor));
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        await transaction.CommitAsync(cancellationToken);
+        await VerifyDatasetAsync(
+            dbContext,
+            options,
+            anchorDate,
+            cancellationToken);
     }
 
     private static List<UserProfile> CreatePatientUsers(
@@ -724,6 +754,79 @@ internal static class DemoDataSeeder
         {
             throw new InvalidOperationException(
                 "The existing demo seed marker does not match a complete v1 dataset.");
+        }
+    }
+
+    private static async Task VerifyDatasetAsync(
+        ApplicationDbContext dbContext,
+        DemoSeedOptions options,
+        DateOnly anchorDate,
+        CancellationToken cancellationToken)
+    {
+        await VerifyConfiguredIdentitiesAsync(dbContext, options, cancellationToken);
+        await VerifyDatasetShapeAsync(dbContext, cancellationToken);
+
+        DateTimeOffset availabilityStartsAt = new(
+            anchorDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+        DateTimeOffset availabilityEndsAt = availabilityStartsAt.AddDays(31);
+        bool hasBookableAvailability = await dbContext.AvailabilitySlots
+            .AsNoTracking()
+            .AnyAsync(
+                slot => slot.StartsAtUtc >= availabilityStartsAt &&
+                    slot.StartsAtUtc < availabilityEndsAt &&
+                    !dbContext.Appointments.Any(appointment =>
+                        appointment.AvailabilitySlotId == slot.Id &&
+                        appointment.Status != AppointmentStatus.Cancelled),
+                cancellationToken);
+
+        bool hasExpectedWorkflowStates =
+            await dbContext.Appointments.CountAsync(
+                appointment => appointment.Status == AppointmentStatus.Completed,
+                cancellationToken) == 12 &&
+            await dbContext.Appointments.CountAsync(
+                appointment => appointment.Status == AppointmentStatus.NoShow,
+                cancellationToken) == 6 &&
+            await dbContext.Appointments.CountAsync(
+                appointment => appointment.Status == AppointmentStatus.Cancelled,
+                cancellationToken) == 6 &&
+            await dbContext.Appointments.CountAsync(
+                appointment => appointment.Status == AppointmentStatus.Scheduled,
+                cancellationToken) == 10 &&
+            await dbContext.Appointments.CountAsync(
+                appointment => appointment.Status == AppointmentStatus.InProgress,
+                cancellationToken) == 2 &&
+            await dbContext.Consultations.CountAsync(
+                consultation => consultation.Status == ConsultationStatus.Completed,
+                cancellationToken) == 12 &&
+            await dbContext.Consultations.CountAsync(
+                consultation => consultation.Status == ConsultationStatus.Draft,
+                cancellationToken) == 2 &&
+            await dbContext.Prescriptions.CountAsync(
+                prescription => prescription.Status == PrescriptionStatus.Issued,
+                cancellationToken) == 8 &&
+            await dbContext.Prescriptions.CountAsync(
+                prescription => prescription.Status == PrescriptionStatus.Cancelled,
+                cancellationToken) == 1 &&
+            await dbContext.Fulfillments.CountAsync(
+                fulfillment => fulfillment.Status == FulfillmentStatus.Pending,
+                cancellationToken) == 2 &&
+            await dbContext.Fulfillments.CountAsync(
+                fulfillment => fulfillment.Status == FulfillmentStatus.InReview,
+                cancellationToken) == 2 &&
+            await dbContext.Fulfillments.CountAsync(
+                fulfillment => fulfillment.Status == FulfillmentStatus.Ready,
+                cancellationToken) == 2 &&
+            await dbContext.Fulfillments.CountAsync(
+                fulfillment => fulfillment.Status == FulfillmentStatus.Dispensed,
+                cancellationToken) == 1 &&
+            await dbContext.Fulfillments.CountAsync(
+                fulfillment => fulfillment.Status == FulfillmentStatus.Cancelled,
+                cancellationToken) == 2;
+
+        if (!hasBookableAvailability || !hasExpectedWorkflowStates)
+        {
+            throw new InvalidOperationException(
+                "The demo dataset does not contain the expected bookable availability and workflow states.");
         }
     }
 }

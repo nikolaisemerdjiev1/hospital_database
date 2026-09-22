@@ -4,6 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import App from './App'
+import { forgetSession, rememberSession } from './auth/SessionRecovery'
 
 const auth = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -15,6 +16,10 @@ const auth = vi.hoisted(() => ({
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => auth,
+}))
+
+vi.mock('./features/demo/useDemoReadiness', () => ({
+  useDemoReadiness: () => ({ status: 'ready', attempt: 0, coolingDown: false, retry: () => {} }),
 }))
 
 function createJsonResponse(
@@ -50,6 +55,7 @@ function renderRoute(path = '/') {
 }
 
 beforeEach(() => {
+  forgetSession()
   auth.isAuthenticated = false
   auth.isLoading = false
   auth.loginWithRedirect.mockReset()
@@ -71,11 +77,22 @@ describe('App', () => {
       screen.getByRole('heading', { level: 1, name: /care moves better/i }),
     ).toBeInTheDocument()
     expect(screen.getByText(/every person and health detail/i)).toBeInTheDocument()
-    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+    expect(screen.getAllByRole('article')).toHaveLength(3)
 
-    await user.click(screen.getByRole('button', { name: 'Enter the care demo' }))
+    await user.click(screen.getByRole('button', { name: 'Sign in as patient' }))
 
-    expect(auth.loginWithRedirect).toHaveBeenCalledWith({ appState: { returnTo: '/app' } })
+    expect(auth.loginWithRedirect).toHaveBeenCalledWith({
+      appState: { returnTo: '/app' },
+      authorizationParams: { login_hint: 'care.relay.demo+patient@gmail.com', prompt: 'login' },
+    })
+  })
+
+  it('keeps the public landing page readable while Auth0 initializes', () => {
+    auth.isLoading = true
+    renderRoute('/')
+    expect(screen.getByRole('heading', { level: 1, name: /care moves better/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Choose your role' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign in as patient' })).toBeDisabled()
   })
 
   it('protects the patient workspace when no Auth0 session exists', () => {
@@ -87,29 +104,47 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Sign in with Auth0' })).toBeInTheDocument()
   })
 
-  it('moves an authenticated callback into the patient workspace', async () => {
+  it('does not override the callback destination before doctor-to-pharmacy denial', async () => {
     auth.isAuthenticated = true
-    vi.stubGlobal(
-      'fetch',
-      vi.fn<typeof fetch>((input) => {
-        if (String(input).endsWith('/api/v1/identity/me')) {
-          return Promise.resolve(
-            createJsonResponse({ userProfileId: 1, displayName: 'Avery Brooks', role: 'patient' }),
-          )
-        }
-
-        return Promise.resolve(
-          createJsonResponse({ items: [], page: 1, pageSize: 50, totalItems: 0, totalPages: 0 }),
-        )
-      }),
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+      createJsonResponse({ userProfileId: 7, displayName: 'Dr. Maya Chen', role: 'doctor' }),
     )
-
-    renderRoute('/auth/callback')
-
+    vi.stubGlobal('fetch', fetchMock)
+    const { router } = renderRoute('/auth/callback')
+    expect(screen.getByRole('heading', { name: 'Completing sign in' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/auth/callback')
+    expect(fetchMock).not.toHaveBeenCalled()
+    await act(async () => { await router.navigate('/app/pharmacy', { replace: true }) })
     expect(
-      await screen.findByRole('heading', { level: 1, name: /good day, avery/i }),
+      await screen.findByRole('heading', { name: 'This dispensing queue is for pharmacist demo accounts.' }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Completing sign in')).not.toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/app/pharmacy')
+    expect(fetchMock.mock.calls.every(([input]) => String(input).endsWith('/api/v1/identity/me'))).toBe(true)
+  })
+
+  it('preserves the requested pharmacy route when starting sign-in', async () => {
+    const user = userEvent.setup()
+    renderRoute('/app/pharmacy')
+    await user.click(screen.getByRole('button', { name: 'Sign in with Auth0' }))
+    expect(auth.loginWithRedirect).toHaveBeenCalledWith({ appState: { returnTo: '/app/pharmacy' } })
+  })
+
+  it('offers an explicit workspace link when revisiting a completed callback', () => {
+    auth.isAuthenticated = true
+    renderRoute('/auth/callback')
+    expect(screen.getByRole('link', { name: 'Open my workspace' })).toHaveAttribute('href', '/app')
+  })
+
+  it('clears automatic recovery before signing out through Auth0', async () => {
+    auth.isAuthenticated = true
+    rememberSession()
+    auth.logout.mockImplementation(() => {
+      expect(sessionStorage.getItem('harbor-care:session-recovery')).toBeNull()
+    })
+    const user = userEvent.setup()
+    renderRoute('/auth/callback')
+    await user.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(auth.logout).toHaveBeenCalledExactlyOnceWith({ logoutParams: { returnTo: window.location.origin } })
   })
 
   it('shows the authenticated patient care itinerary', async () => {
@@ -194,7 +229,7 @@ describe('App', () => {
           return Promise.resolve(
             createJsonResponse({
               userProfileId: 7,
-              displayName: 'Maya Chen',
+              displayName: 'Dr. Maya Chen',
               role: 'doctor',
             }),
           )
@@ -239,6 +274,7 @@ describe('App', () => {
       await screen.findByRole('heading', { level: 1, name: 'Care queue' }),
     ).toBeInTheDocument()
     expect(await screen.findByRole('heading', { name: 'Avery Brooks' })).toBeInTheDocument()
+    expect(screen.getByText(/^Good day, Dr\. Maya Chen\./)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start consultation' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Continue consultation' })).toHaveAttribute(
       'href',

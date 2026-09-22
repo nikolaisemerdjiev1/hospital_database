@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\backend\Hospital.Api\Hospital.Api.csproj" />
+    <None Include="..\..\scripts\production\*.sql" Link="ProductionSql\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Compile Include="..\..\scripts\production\NeonPasswordSetup\PasswordSetup.cs" Link="ProductionTools\PasswordSetup.cs" />
   </ItemGroup>
 
 </Project>
