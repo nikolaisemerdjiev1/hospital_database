@@ -317,3 +317,116 @@ Let patients browse seeded clinician availability, list their own appointments, 
 ### Revisit trigger
 
 Add slot authoring, stronger schedule-overlap enforcement, and a transaction abstraction when clinician workflows or multi-write audit requirements enter scope.
+
+## ADR-011: Deploy the portfolio demonstration across Azure and Neon
+
+**Status:** Accepted
+
+### Context
+
+Milestone 6 must produce an accessible public demo, demonstrate cloud delivery for .NET roles, and avoid recurring cost for a single-maintainer portfolio project.
+
+### Decision
+
+Deploy React to Azure Static Web Apps Free, the ASP.NET Core container to Azure Container Apps Consumption with zero minimum replicas, and PostgreSQL to Neon Free. Publish immutable SHA-tagged images to public GitHub Container Registry. Use a documented Azure CLI bootstrap rather than a large infrastructure-as-code layer for the single production environment.
+
+### Alternatives considered
+
+- AWS-hosted frontend and API services
+- Azure Database for PostgreSQL
+- An all-in-one hobby hosting provider
+- A complete Bicep deployment for every external resource
+
+### Rationale
+
+- Azure reinforces the target .NET portfolio narrative.
+- Scale-to-zero and the selected free services fit intermittent recruiter traffic.
+- Containers and standard PostgreSQL keep the application portable.
+- A small documented bootstrap is easier for one maintainer to understand and operate.
+
+### Trade-offs
+
+- Cross-provider networking, secrets, and CORS need explicit configuration.
+- The first API request may wait for a cold start.
+- Free services provide no production availability commitment.
+- Some resources are provisioned through documented external control-plane steps rather than one declarative deployment.
+
+### Revisit trigger
+
+Introduce Bicep or another infrastructure-as-code system when staging, multiple deployments, or repeatable disaster recovery becomes a real requirement.
+
+## ADR-013: Serve the React SPA and API together on Container Apps
+
+**Status:** Accepted, September 13, 2026. Supersedes the separate frontend-hosting portions of ADR-011 and the earlier Azure hosting decision.
+
+### Context
+
+The student subscription's allowed locations have no intersection with Static Web Apps
+regions. The quota-request route asks for a paid subscription upgrade. The existing West US
+Container Apps Consumption environment is available, and preserving near-zero recruiter-demo
+costs matters more than adding another hosting provider.
+
+### Decision
+
+Build React with locked Node dependencies, copy its static output into the non-root .NET
+image, and serve the SPA and bearer-token API from one Container App origin. Retain Neon
+Oregon, Auth0 SPA authentication, public GHCR and scoped GitHub OIDC. Start with zero minimum
+replicas; validate 0.25 vCPU / 0.5 GiB before release. No Static Web Apps token is required.
+
+### Alternatives and trade-offs
+
+- A subscription-policy exception might retain the original static host, but approval and
+  a working support route are unconfirmed; do not upgrade billing to bypass the restriction.
+- An independent free static provider preserves an immediately available landing page but
+  adds a provider and delivery path. Revisit if hosted first-load latency is unacceptable.
+- Always-on Container Apps avoids idle cold starts but consumes ongoing resources; it is
+  not approved as an automatic fix.
+- Combined hosting simplifies origins, builds and rollback, but initial HTML waits for
+  container startup and frontend availability is coupled to the server process.
+
+### Consequences
+
+React remains a SPA, not server-rendered HTML. API authorization and ownership stay intact;
+only static assets and shell routes are anonymous. Separate frontend/API CSP and cache
+policies prevent the SPA fallback from disguising API errors or exposing configuration.
+Platform probes use process-only liveness; visitor readiness checks wake the database.
+The approximate 200 running hours inside the monthly compute grant are a cost estimate,
+not measured capacity or a guarantee. Hosted cold-start, authenticated memory/load and
+production Auth0 checks remain release gates. See [combined hosting](../development/combined-hosting.md).
+
+## ADR-012: Reset only the allowlisted synthetic dataset in one transaction
+
+**Status:** Accepted
+
+### Context
+
+Public visitors share mutable synthetic appointments, consultations, prescriptions, and fulfillments. The demo needs predictable recovery without exposing a destructive HTTP endpoint or weakening the existing non-destructive initializer.
+
+### Decision
+
+Keep `--initialize-database` as the migrate-and-seed-empty command. Add a separate `--reset-demo-data` maintenance mode that validates the expected database, identity bindings, UTC anchor, and migration state; acquires a PostgreSQL transaction advisory lock; truncates an explicit application-table allowlist with `RESTART IDENTITY RESTRICT`; reseeds and verifies the canonical dataset; and commits once. Preserve EF migration history and expose reset only through scheduled and protected operator jobs.
+
+### Alternatives considered
+
+- Reset through a public administrator endpoint
+- Drop and recreate the production database
+- Use `TRUNCATE ... CASCADE`
+- Delete rows individually through EF Core
+- Restore a database snapshot
+
+### Rationale
+
+- One database transaction prevents reviewers from observing a partially rebuilt workflow.
+- An allowlist fails when an unknown dependency appears instead of silently erasing it.
+- The same deterministic seeder keeps local, test, and production behavior aligned.
+- Maintenance-mode execution has no public application route.
+
+### Trade-offs
+
+- The transaction briefly locks all application tables.
+- New domain tables must be added deliberately to the reset allowlist and invariant checks.
+- A failed or concurrent reset must be surfaced operationally and retried later.
+
+### Revisit trigger
+
+Replace full-dataset reset with tenant- or session-isolated demos if traffic, data volume, reset duration, or concurrent visitor disruption becomes material.

@@ -82,7 +82,41 @@ Initialization is an explicit maintenance mode. It validates the configured demo
 
 The initializer refuses to add demo records to a partially populated database. Normal `dotnet run --project backend/Hospital.Api` startup never migrates or seeds, which prevents an application replica from racing another replica or unexpectedly changing a production schema.
 
+## Reset the synthetic demo
+
+The initializer remains non-destructive and will not refresh a database that visitors have changed. To deliberately restore the known synthetic dataset, run the separate maintenance command:
+
+```shell
+dotnet run --project backend/Hospital.Api -- --reset-demo-data
+```
+
+Development may reuse `ConnectionStrings:HospitalDatabase` for this command because the Docker database is local and direct. Production requires a separate `ConnectionStrings:HospitalMaintenanceDatabase` setting; the normal web process continues to use the pooled runtime connection.
+
+Before deleting any synthetic records, reset verifies `DemoReset:ExpectedDatabaseName`, the four configured identity bindings and the UTC seed anchor. Within one transaction it acquires the advisory lock shared with release maintenance **before** requiring exact equality of applied and image migration IDs (pending or unknown newer migrations both refuse reset). It then takes the seed lock, truncates only the explicit application-table allowlist, reseeds and verifies the canonical workflow, and commits once. `__EFMigrationsHistory` is never truncated. A failure rolls back the complete operation. See [delivery](delivery.md#scheduled-and-manual-synthetic-resets) for protected production reset automation.
+
+Do not point this command at a database containing real or independently owned records. It exists only for this project's synthetic shared demonstration and is not exposed through HTTP.
+
 Development supplies `Frontend:Origin` as `http://localhost:5173`. Production intentionally has no fallback: deployment must set `Frontend__Origin` to the exact public React origin or the API refuses to start. This fail-fast behavior prevents a healthy-looking deployment with unusable browser CORS.
+
+## Recruiter landing page and readiness
+
+The public landing page explains the shared synthetic care journey and offers patient, doctor, and pharmacist account cards. Each card sends an email hint and requests a fresh Auth0 login. The signed-in account and API policies determine access; choosing a card never assigns a role. The existing workspace remains available to an already signed-in user.
+
+To publish the intentionally public, project-only demo password locally, edit the existing ignored `frontend/.env.local` file in your editor and add `VITE_DEMO_PASSWORD` with the value supplied by the demo owner. Preserve the other settings. Do not paste the value into chat, terminal commands, source files, or screenshots. Restart Vite after editing. The tracked `.env.example` deliberately leaves this value blank; without it, the landing page provides guidance for users who already know the password. Never use a mailbox password or any private credential here: Vite embeds `VITE_*` values in public browser assets.
+
+The landing page checks the API's anonymous `/health/ready` endpoint, which includes PostgreSQL readiness. It stays readable while checking, and enables the account sign-in buttons once ready. Checks are serial, with four attempts, an eight-second timeout per request, and two-, four-, and eight-second delays between attempts: a nominal maximum of 46 seconds, subject to browser timer scheduling. A `Retry-After` response stops automatic checking and disables explicit retry until the requested time; HTTP 429 without a usable header defaults to a 60-second wait. The API exposes this header only to the configured frontend origin through CORS. Leaving the page cancels its pending check and retry timer.
+
+Readiness is a point-in-time availability check, not a guarantee that a later operation will succeed. Existing authenticated workflows retain their error handling. No mutation is replayed to wake the API, and readiness performs no migration, seeding, or reset.
+
+Focused browser checks use a separate Vite server on port 4174, a fake Auth0 domain, a fake public password, and intercepted health responses. They do not require Docker, real Auth0 credentials, or a populated database:
+
+```shell
+cd frontend
+npx playwright install chromium
+npm run test:browser
+```
+
+Use the repository's Node 24 and npm 11.16 toolchain. These checks cover 320/768/1440-pixel layouts, axe WCAG A/AA checks, keyboard focus and section navigation, reduced motion, all three SDK authorization redirects, cold-start failure/retry, and cross-origin cooldown behavior. Generated screenshots and failure artifacts are ignored under `frontend/test-results/`. Browser automation verifies the login request boundary; actual Auth0 sign-in, role separation, and end-to-end care workflows still require manual acceptance.
 
 ## Authentication behavior
 
@@ -145,7 +179,7 @@ npm ci
 npm run lint
 npm run typecheck
 npm test
-npm audit --audit-level=high
+npm audit --audit-level=moderate
 npm run build
 ```
 
@@ -155,3 +189,7 @@ Containers:
 docker compose config --quiet
 docker build --file backend/Hospital.Api/Dockerfile --tag hospital-api:local .
 ```
+
+See [Quality and security gates](quality-gates.md) for NuGet audits, CodeQL, dependency review,
+workflow lint, final-image scanning, and passive production smoke commands. Automated CI
+uses fake Auth0/password configuration and disposable PostgreSQL services.

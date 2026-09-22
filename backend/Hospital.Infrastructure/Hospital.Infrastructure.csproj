@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Hospital.Core\Hospital.Core.csproj" />
+    <EmbeddedResource Include="..\..\scripts\production\grant-runtime.sql" LogicalName="Hospital.Release.grant-runtime.sql" />
   </ItemGroup>
 
   <PropertyGroup>

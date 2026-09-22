@@ -4,6 +4,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 
 import { ApiProblemError } from './api/client'
 import { getIdentity, type Identity } from './api/identity'
+import { forgetSession } from './auth/SessionRecovery'
 import {
   bookAppointment,
   cancelAppointment,
@@ -19,10 +20,9 @@ import { ConsultationPage } from './features/doctor/ConsultationPage'
 import { PatientMedications } from './features/patient/PatientMedications'
 import { PharmacyQueuePage } from './features/pharmacy/PharmacyQueuePage'
 import { FulfillmentDetailPage } from './features/pharmacy/FulfillmentDetailPage'
+import { LandingPage } from './features/demo/LandingPage'
 import { NavigationGuardProvider } from './navigation/NavigationGuard'
 import './App.css'
-
-const careStages = ['Appointment', 'Consultation', 'Prescription', 'Pharmacy'] as const
 
 function LoadingScreen({ message }: { message: string }) {
   return (
@@ -51,7 +51,10 @@ function AppHeader() {
         <button
           className="text-button"
           type="button"
-          onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+          onClick={() => {
+            forgetSession()
+            void logout({ logoutParams: { returnTo: window.location.origin } })
+          }}
         >
           Sign out
         </button>
@@ -60,76 +63,9 @@ function AppHeader() {
   )
 }
 
-function LandingPage() {
-  const { isAuthenticated, loginWithRedirect } = useAuth0()
-  const navigate = useNavigate()
-
-  return (
-    <main id="main-content" className="landing-page">
-      <section className="hero" aria-labelledby="page-title">
-        <div className="hero__copy">
-          <p className="eyebrow">A coordinated-care portfolio project</p>
-          <h1 id="page-title">
-            Care moves better when the <em>next step</em> is clear.
-          </h1>
-          <p className="hero__summary">
-            Explore a fictional patient journey from appointment scheduling to pharmacy pickup,
-            built with React, ASP.NET Core, PostgreSQL, and Auth0.
-          </p>
-          <div className="hero__actions">
-            <button
-              className="primary-button"
-              type="button"
-              onClick={() =>
-                isAuthenticated
-                  ? navigate('/app')
-                  : loginWithRedirect({ appState: { returnTo: '/app' } })
-              }
-            >
-              {isAuthenticated ? 'Open secure workspace' : 'Enter the care demo'}
-            </button>
-            <a className="secondary-link" href="#care-relay">
-              See how care moves
-            </a>
-          </div>
-          <p className="synthetic-note">
-            <span aria-hidden="true">◆</span>
-            Every person and health detail shown here is fictional.
-          </p>
-        </div>
-
-        <div className="hero__artifact" aria-label="Example patient care itinerary">
-          <div className="artifact-ticket">
-            <p className="eyebrow">Next handoff</p>
-            <time dateTime="2030-09-08T16:00:00Z">Tue 08 · 9:00 AM</time>
-            <h2>Visit with Dr. Maya Chen</h2>
-            <p>Family Medicine · 45 minutes</p>
-            <span className="status-pill status-pill--scheduled">Scheduled</span>
-          </div>
-          <span className="artifact-caption">One calm view of what happens next.</span>
-        </div>
-      </section>
-
-      <section id="care-relay" className="relay-section" aria-labelledby="relay-title">
-        <div>
-          <p className="eyebrow">The care relay</p>
-          <h2 id="relay-title">Context travels forward. Each person sees their part.</h2>
-        </div>
-        <ol className="relay-list">
-          {careStages.map((stage, index) => (
-            <li key={stage}>
-              <span>{String(index + 1).padStart(2, '0')}</span>
-              <strong>{stage}</strong>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </main>
-  )
-}
-
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0()
+  const location = useLocation()
 
   if (isLoading) {
     return <LoadingScreen message="Confirming your secure session" />
@@ -144,7 +80,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
         <button
           className="primary-button"
           type="button"
-          onClick={() => loginWithRedirect({ appState: { returnTo: window.location.pathname } })}
+          onClick={() => loginWithRedirect({ appState: { returnTo: location.pathname } })}
         >
           Sign in with Auth0
         </button>
@@ -203,7 +139,14 @@ function AuthCallbackPage() {
   const { error, isAuthenticated, loginWithRedirect } = useAuth0()
 
   if (isAuthenticated) {
-    return <Navigate to="/app" replace />
+    // AuthProvider owns the redirect so this page cannot overwrite appState.returnTo.
+    return (
+      <main id="main-content" className="centered-state">
+        <h1>Completing sign in</h1>
+        <output>Opening your requested workspace.</output>
+        <Link className="primary-button" to="/app">Open my workspace</Link>
+      </main>
+    )
   }
 
   return (
@@ -460,8 +403,8 @@ function DashboardPage() {
             <button className="danger-button" type="button" disabled={isSaving} onClick={confirmCancellation}>
               {isSaving ? 'Cancelling…' : 'Cancel visit'}
             </button>
-            <button className="text-button" type="button" onClick={() => setCancelling(null)}>
-              Keep visit
+              <button className="text-button" type="button" onClick={() => setCancelling(null)}>
+                Keep visit
             </button>
           </div>
         </section>
@@ -687,8 +630,9 @@ function BookingPage() {
 
 function App() {
   const { isLoading } = useAuth0()
+  const location = useLocation()
 
-  if (isLoading) return <LoadingScreen message="Opening Harbor Care" />
+  if (isLoading && location.pathname !== '/') return <LoadingScreen message="Opening Harbor Care" />
 
   return (
     <NavigationGuardProvider>
@@ -715,7 +659,7 @@ function App() {
               <DoctorWorklistPage />
             </ProtectedRoute>
           }
-        />
+          />
         <Route
           path="/app/doctor/consultations/:consultationId"
           element={

@@ -59,6 +59,7 @@ public static class InfrastructureServiceCollectionExtensions
             });
         services.AddScoped<IMedicationCatalog, RxNormMedicationCatalog>();
         services.AddScoped<DatabaseInitializer>();
+        services.AddScoped<DemoDataResetter>();
 
         services
             .AddHealthChecks()

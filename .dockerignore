@@ -5,6 +5,8 @@
 .vscode
 .env
 .env.*
+**/.env
+**/.env.*
 **/bin
 **/obj
 **/TestResults
@@ -12,6 +14,11 @@
 **/dist
 **/coverage
 docs
-frontend
+frontend/test-results
+frontend/playwright-report
 tests
+scripts/**
+!scripts/production
+!scripts/production/grant-runtime.sql
+.artifacts
 *.md

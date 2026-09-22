@@ -6,6 +6,8 @@ on:
     branches:
       - main
   workflow_dispatch:
+  schedule:
+    - cron: "17 10 * * 0"
 
 permissions:
   contents: read
@@ -60,6 +62,9 @@ jobs:
       - name: Restore locked dependencies
         run: dotnet restore Hospital.slnx --locked-mode
 
+      - name: Audit direct and transitive NuGet packages
+        run: python3 scripts/audit_nuget.py
+
       - name: Restore repository tools
         run: dotnet tool restore
 
@@ -83,7 +88,13 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      VITE_AUTH0_DOMAIN: demo-auth.example.invalid
+      VITE_AUTH0_CLIENT_ID: browser-test-client
+      VITE_AUTH0_AUDIENCE: https://demo-api.example.invalid
+      VITE_API_BASE_URL: http://127.0.0.1:5050
+      VITE_DEMO_PASSWORD: test-only-demo-value
     defaults:
       run:
         working-directory: frontend
@@ -111,19 +122,35 @@ jobs:
         run: npm run typecheck
 
       - name: Test
-        run: npm test
+        run: npm test -- --maxWorkers=2
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high
+        run: npm audit --audit-level=moderate
+
+      - name: Install isolated browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser and accessibility tests with fake authentication
+        run: npm run test:browser
 
       - name: Build
         run: npm run build
 
   container:
-    name: API container
-    needs: backend
+    name: Combined application container
+    needs: [backend, frontend]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+        env:
+          POSTGRES_DB: hospital_container_check
+          POSTGRES_USER: hospital_ci
+          POSTGRES_PASSWORD: container_ci_only
+        options: >-
+          --health-cmd "pg_isready -U hospital_ci -d hospital_container_check"
+          --health-interval 5s --health-timeout 5s --health-retries 10
 
     steps:
       - name: Check out repository
@@ -134,5 +161,94 @@ jobs:
       - name: Validate Docker Compose
         run: docker compose config --quiet
 
-      - name: Build API image
-        run: docker build --file backend/Hospital.Api/Dockerfile --tag hospital-api:ci .
+      - name: Build combined image with fake public settings
+        env:
+          VITE_DEMO_PASSWORD: test-only-demo-value
+        run: >-
+          docker build --file backend/Hospital.Api/Dockerfile --tag hospital-api:ci
+          --build-arg VITE_AUTH0_DOMAIN=demo-auth.example.invalid
+          --build-arg VITE_AUTH0_CLIENT_ID=browser-test-client
+          --build-arg VITE_AUTH0_AUDIENCE=https://demo-api.example.invalid
+          --secret id=demo_password,env=VITE_DEMO_PASSWORD .
+
+      - name: Verify non-root image configuration
+        shell: bash
+        run: |
+          image_user="$(docker image inspect hospital-api:ci --format '{{.Config.User}}')"
+          test "$image_user" = "1654"
+
+      - name: Verify release maintenance in a separate disposable database
+        run: python3 scripts/check_release_container.py --image hospital-api:ci
+
+      - name: Install checksum-pinned Trivy
+        run: python3 scripts/install_tool.py trivy --directory "$RUNNER_TEMP/quality-tools"
+
+      - name: Scan final image including unfixed vulnerabilities
+        run: >-
+          "$RUNNER_TEMP/quality-tools/trivy" image hospital-api:ci
+          --scanners vuln --severity HIGH,CRITICAL --exit-code 1
+          --skip-version-check --timeout 10m
+
+      - name: Start isolated production container
+        env:
+          CI_REVISION: ${{ github.sha }}
+          CI_NETWORK: ${{ job.services.postgres.network }}
+        run: |
+          docker run --detach --name hospital-api-ci --network "$CI_NETWORK" \
+            --publish 127.0.0.1:8086:8080 --read-only --cap-drop ALL --cpus 0.25 --memory 512m \
+            --security-opt no-new-privileges --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --env "Release__Revision=$CI_REVISION" \
+            --env ReverseProxy__TrustForwardedHeaders=true \
+            --env Frontend__Origin=http://127.0.0.1:8086 \
+            --env Authentication__Auth0__Domain=demo-auth.example.invalid \
+            --env Authentication__Auth0__Audience=https://demo-api.example.invalid \
+            --env Authentication__Auth0__RoleClaim=https://hospital.test/claims/app_role \
+            --env 'ConnectionStrings__HospitalDatabase=Host=postgres;Database=hospital_container_check;Username=hospital_ci;Password=container_ci_only' \
+            hospital-api:ci
+
+      - name: Passive production-mode combined smoke
+        run: >-
+          python3 scripts/smoke.py --api-url http://127.0.0.1:8086
+          --frontend-origin http://127.0.0.1:8086 --frontend-url http://127.0.0.1:8086
+          --expected-revision "$GITHUB_SHA"
+          --allow-local-http
+
+      - name: Set up Node.js for production browser checks
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install locked browser dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install isolated Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Check the real container CSP, routes, and accessibility
+        working-directory: frontend
+        run: npx playwright test --config playwright.container.config.ts
+
+      - name: Remove isolated API container
+        if: always()
+        run: docker rm --force hospital-api-ci || true
+
+  tooling:
+    name: Workflow and smoke tooling
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Test quality scripts
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+      - name: Install checksum-pinned actionlint
+        run: python3 scripts/install_tool.py actionlint --directory "$RUNNER_TEMP/quality-tools"
+
+      - name: Validate workflow syntax and shell commands
+        run: '"$RUNNER_TEMP/quality-tools/actionlint" -color'

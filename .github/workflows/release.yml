@@ -1,0 +1,141 @@
+name: Release combined application
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full current main SHA with successful CI and CodeQL push runs
+        required: true
+        type: string
+      confirmation:
+        description: Type DEPLOY_SYNTHETIC_DEMO to authorize publication, maintenance, rollout and daily synthetic resets
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hospital-production-maintenance
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'DEPLOY_SYNTHETIC_DEMO'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Require exact main commit and successful required jobs
+        env:
+          RELEASE_SHA: ${{ inputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release_gate.py
+
+  publish:
+    needs: gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    env:
+      RELEASE_SHA: ${{ inputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Recheck gate after environment approval
+        run: python3 scripts/release_gate.py
+      - name: Build once with production public settings and private build-secret input
+        env:
+          VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+          VITE_DEMO_PASSWORD: ${{ secrets.VITE_DEMO_PASSWORD }}
+        run: |
+          test -n "$VITE_DEMO_PASSWORD"
+          docker build --platform linux/amd64 --no-cache --file backend/Hospital.Api/Dockerfile \
+            --build-arg VITE_AUTH0_DOMAIN --build-arg VITE_AUTH0_CLIENT_ID --build-arg VITE_AUTH0_AUDIENCE \
+            --secret id=demo_password,env=VITE_DEMO_PASSWORD \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$RELEASE_SHA" --tag hospital-release:checked .
+          test "$(docker image inspect hospital-release:checked --format '{{.Config.User}}')" = "1654"
+      - name: Install verified scanner
+        run: python3 scripts/install_tool.py trivy --directory "$RUNNER_TEMP/quality-tools"
+      - name: Scan exact image before publishing
+        run: >-
+          "$RUNNER_TEMP/quality-tools/trivy" image hospital-release:checked
+          --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --skip-version-check --timeout 10m
+      - name: Recheck main before publication
+        run: python3 scripts/release_gate.py
+      - name: Publish a unique SHA-qualified tag and select its immutable digest
+        id: image
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/hospital-docker-auth
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          tag="$image:sha-$RELEASE_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          docker tag hospital-release:checked "$tag"
+          docker push "$tag"
+          digest="$(docker image inspect "$tag" --format '{{index .RepoDigests 0}}')"
+          export RELEASE_IMAGE="$digest"
+          python3 -c 'import os,re; v=os.environ["RELEASE_IMAGE"]; prefix="ghcr.io/"+os.environ["GITHUB_REPOSITORY"].lower()+"@sha256:"; assert v.startswith(prefix) and re.fullmatch("[0-9a-f]{64}",v[len(prefix):]); print("image="+v)' >> "$GITHUB_OUTPUT"
+          DOCKER_CONFIG="$RUNNER_TEMP/hospital-anonymous-pull" docker manifest inspect "$digest" > /dev/null || {
+            echo 'Image published, but anonymous pull failed. Make the GHCR package public before a separately approved retry.'
+            exit 1
+          }
+      - name: Remove ephemeral registry credential configuration
+        if: always()
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/hospital-docker-auth
+        run: rm -rf -- "$DOCKER_CONFIG"
+
+  deploy:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ inputs.sha }}
+      RELEASE_IMAGE: ${{ needs.publish.outputs.image }}
+      RELEASE_AUTHORIZATION: ${{ inputs.confirmation }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_CONTAINER_APP_ENVIRONMENT: ${{ vars.AZURE_CONTAINER_APP_ENVIRONMENT }}
+      AZURE_CONTAINER_APP_NAME: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+      APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+      VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+      VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+      AUTH0_ROLE_CLAIM: ${{ vars.AUTH0_ROLE_CLAIM }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Recheck gate before Azure authentication
+        run: python3 scripts/release_gate.py
+      - name: Authenticate through the existing production OIDC identity
+        uses: azure/login@eec3c95657c1536435858eda1f3ff5437fee8474 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Prepare database, update existing application, smoke and recover on failure
+        run: python3 scripts/release.py --execute

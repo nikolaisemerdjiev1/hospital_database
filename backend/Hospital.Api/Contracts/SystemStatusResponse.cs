@@ -4,4 +4,5 @@ public sealed record SystemStatusResponse(
     string Service,
     string Status,
     string Environment,
+    string Revision,
     DateTimeOffset Timestamp);

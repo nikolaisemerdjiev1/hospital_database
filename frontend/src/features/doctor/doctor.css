@@ -131,7 +131,7 @@
 .worklist-row {
   min-height: 116px;
   display: grid;
-  grid-template-columns: minmax(155px, 0.32fr) minmax(0, 1fr) auto;
+  grid-template-columns: 155px minmax(0, 1fr) 220px;
   align-items: center;
   gap: 1.5rem;
   padding: 1.25rem 1.3rem;
