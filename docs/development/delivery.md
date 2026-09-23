@@ -1,5 +1,7 @@
 # Combined application delivery
 
+> **Current release state (2026-09-23):** Release run 35761286852, manual reset run 35833965206, and scheduled reset execution `job-harbor-care-reset-29836020` succeeded. Do not repeat setup, dispatch, retry, or alter schedule/settings. The only remaining Milestone 6 work is private read-only product captures, documentation review, and separately approved publication/final closure.
+
 `release.yml` delivers the React SPA and .NET API as one digest-pinned image. This
 implementation is locally tested; a successful hosted release is a separate checkpoint.
 It never provisions resources, retrieves database secret values, changes Auth0 or downgrades

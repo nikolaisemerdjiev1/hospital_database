@@ -1,121 +1,46 @@
-# Hospital Coordination Platform
+# Harbor Care
 
 [![Continuous integration](https://github.com/nikolaisemerdjiev1/hospital_database/actions/workflows/ci.yml/badge.svg)](https://github.com/nikolaisemerdjiev1/hospital_database/actions/workflows/ci.yml)
 
-This repository is being rebuilt from an early Java console project into a portfolio-grade coordinated-care platform.
+Harbor Care is a synthetic coordinated-care demo built with ASP.NET Core, React, and PostgreSQL. Follow one appointment from patient booking through doctor consultation and pharmacist dispensing, then return to the patient to see the updated status.
 
-The modern application will demonstrate a complete workflow across four synthetic roles:
+**Live demo:** https://ca-harbor-care-demo.salmonsea-5286e167.westus.azurecontainerapps.io
 
-```text
-Patient books an appointment
-    -> Doctor completes a consultation
-    -> Doctor issues an RxNorm-backed prescription
-    -> Pharmacist fulfills the prescription
-    -> Patient sees the updated care status
-```
+The three public demo roles are patient, doctor, and pharmacist. Credentials are shown through the role cards and should be entered privately; the seeded administrator is not a public demo login. Visitor edits are shared and the fictional dataset resets daily at 11:00 UTC. A first visit can cold-start; this is an educational demo, not a clinical system or availability promise.
 
-## Technology stack
+![Harbor Care landing page showing the three synthetic care roles](docs/assets/screenshots/landing.png)
 
-- ASP.NET Core and .NET 10
-- React and TypeScript
-- PostgreSQL with Entity Framework Core and Npgsql
-- Auth0 authentication with signed custom role claims
-- RxNorm medication search, with openFDA planned for Phase 2
-- Docker-based local development
-- GitHub Actions CI/CD
-- Azure Container Apps serving the React SPA and .NET API
-- Neon PostgreSQL
+## Care relay
 
-## Current status
+![Coordinated care journey](docs/assets/diagrams/care-journey.svg)
 
-Milestone 5 completes the coordinated journey from appointment scheduling through pharmacy fulfillment. The repository now contains:
+- Patient books an appointment and later sees only their own status.
+- Doctor records a consultation and issues an RxNorm-backed prescription.
+- Pharmacist fulfills it; the patient sees the completed handoff without internal pharmacy details.
 
-- A .NET 10 solution with API, Core, and Infrastructure boundaries
-- A React 19 and TypeScript application with the initial care-relay experience
-- API configuration, structured request logging, Problem Details, health, and OpenAPI endpoints
-- A normalized coordinated-care domain model with explicit PostgreSQL constraints and indexes
-- EF Core migrations, `xmin` optimistic concurrency, and deterministic synthetic demo data
-- Auth0 JWT validation, fail-closed role policies, and active local-profile resolution
-- Patient-scoped clinician browsing, appointment booking, listing, cancellation, and prescription-status APIs
-- PostgreSQL-backed double-booking protection and `xmin` stale-update handling
-- An Auth0-protected React care itinerary and accessible three-step booking flow
-- A doctor worklist, consultation workflow, resilient RxNorm medication search, and transactional prescription issuance and cancellation
-- A pharmacist queue with assignment-safe claim, ready, and dispense transitions plus atomic audit logging
-- Patient-safe pharmacy status labels that omit pharmacist identity and internal operational metadata
-- Backend architecture and integration tests plus frontend component and client tests
-- PostgreSQL 18.4 for local development through Docker Compose
-- A non-root production API container and GitHub Actions continuous integration
+## Engineering highlights
 
-Milestone 5 completes the authenticated patient, doctor, and pharmacist handoff with automated PostgreSQL integration coverage and live cross-role validation.
+- Role and ownership authorization, PostgreSQL booking constraints, optimistic concurrency, and transactional prescription/fulfillment transitions.
+- A single Azure Container Apps origin serves the React SPA and API; Neon stores the synthetic data.
+- GitHub Actions builds a scanned immutable container through OIDC, runs gated database preparation, and maintains the synthetic data reset.
+
+![Deployment topology](docs/assets/diagrams/deployment.svg)
+
+Release and reset evidence, including the 2026-09-23 scheduled reset observation, is in [Milestone 6 evidence](docs/releases/milestone-06-evidence.md). The five authenticated UI captures are private, read-only seeded hosted views; their provenance is recorded with the evidence.
 
 ## Run locally
 
-Prerequisites are the .NET 10 SDK, Node.js 24, and Docker Desktop.
-
-Start PostgreSQL:
-
-```shell
-docker compose up -d database
-docker compose ps
-```
-
-Start the API from the repository root:
-
-```shell
-dotnet tool restore
-dotnet restore Hospital.slnx --locked-mode
-dotnet user-secrets set "ConnectionStrings:HospitalDatabase" "Host=127.0.0.1;Port=5432;Database=hospital_coordination;Username=hospital_app;Password=hospital_local_only" --project backend/Hospital.Api
-dotnet run --project backend/Hospital.Api -- --initialize-database
-dotnet run --project backend/Hospital.Api
-```
-
-The explicit initialization command applies pending migrations and creates the repeatable fictional dataset. Normal API startup never changes the schema or seeds data.
-
-In a second terminal, start React:
-
-```shell
-cd frontend
-npm ci
-Copy-Item .env.example .env.local
-npm run dev
-```
-
-Open `http://localhost:5173`. API liveness is available at `http://localhost:5050/health/live`, database readiness at `http://localhost:5050/health/ready`, and OpenAPI at `http://localhost:5050/openapi/v1.json`.
-
-## Repository structure
-
-```text
-frontend/                       React and TypeScript application
-backend/Hospital.Api/           HTTP boundary and composition root
-backend/Hospital.Core/          Application rules and contracts
-backend/Hospital.Infrastructure/ PostgreSQL and external adapters
-tests/                          Backend architecture and API integration tests
-docs/                           Architecture, development, and project history
-```
-
-Core does not reference API or Infrastructure. The API composes the application, while Infrastructure implements Core-owned database and external-service contracts.
+See [the local development guide](docs/development/getting-started.md). It covers local-only configuration, explicit initialization, and the separate synthetic reset command.
 
 ## Documentation
 
-- [Modernization blueprint](docs/architecture/modernization-blueprint.md)
+- [Recruiter demo guide](docs/demo-guide.md)
+- [Portfolio presentation notes](docs/portfolio-presentation.md)
 - [Portfolio release architecture](docs/architecture/portfolio-release.md)
-- [Architecture decision log](docs/architecture/decision-log.md)
-- [Solution foundation](docs/architecture/solution-foundation.md)
-- [Data and identity foundation](docs/architecture/data-identity-foundation.md)
-- [Patient scheduling vertical slice](docs/architecture/patient-scheduling-slice.md)
-- [Doctor clinical workflow vertical slice](docs/architecture/clinical-workflow-slice.md)
-- [Pharmacy fulfillment vertical slice](docs/architecture/pharmacy-fulfillment-slice.md)
-- [Local development guide](docs/development/getting-started.md)
+- [Delivery and recovery](docs/development/delivery.md)
 - [Quality and security gates](docs/development/quality-gates.md)
-- [Azure bootstrap and cost controls](docs/development/azure-bootstrap.md)
-- [Combined React SPA and API hosting](docs/development/combined-hosting.md)
-- [Delivery automation and production setup](docs/development/delivery.md)
-- [Legacy project history](docs/history/legacy-java.md)
-
-## Legacy project
-
-The original freshman-year Java implementation is preserved in the `legacy-java-v1.0` Git tag rather than carried in the modern source tree. The historical document explains what it did, what its limitations were, and how the new architecture addresses them.
+- [Legacy Java history](docs/history/legacy-java.md)
 
 ## Disclaimer
 
-This is an educational portfolio application containing only fictional, synthetic data. It is not intended for real clinical use and does not claim healthcare-regulatory compliance.
+Harbor Care contains only fictional, synthetic data. It is not for clinical use and makes no healthcare-regulatory compliance claim.

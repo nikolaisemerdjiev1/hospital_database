@@ -1,5 +1,7 @@
 # Quality and security gates
 
+> **Evidence boundary:** local/CI fixture checks are not hosted workflow proof. The released SHA and the user-confirmed hosted journey are recorded separately in [Milestone 6 evidence](../releases/milestone-06-evidence.md); the scheduled reset observation is a read-only cloud-history result, not a test rerun.
+
 Milestone 6 extends the existing CI without granting deployment access to quality jobs.
 PR checks use `pull_request`, never `pull_request_target`; checkout credentials are not persisted. Tests
 use synthetic CI values and isolated PostgreSQL databases. Real Auth0 accounts, passwords,
