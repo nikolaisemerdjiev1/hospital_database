@@ -1,5 +1,7 @@
 # Milestone 6: Portfolio release architecture
 
+> **Release checkpoint (2026-09-23):** The released SHA is `4f52f261cdc0b68b92848220ae0b7f0a11f5dba1`; the combined release and one protected manual reset succeeded. The scheduled reset was then observed succeeding as `job-harbor-care-reset-29836020` at 11:00:00–11:00:28 UTC. This document preserves the accepted architecture; [release evidence](../releases/milestone-06-evidence.md) distinguishes observed facts from design intent.
+
 - **Status:** Approved for implementation
 - **Date:** September 9, 2026
 - **Scope:** Zero-cost portfolio deployment, production safeguards, deterministic demo recovery, release evidence, and documentation

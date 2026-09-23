@@ -1,5 +1,7 @@
 # Combined SPA and API hosting
 
+> **Hosted checkpoint:** The combined application is released at SHA `4f52f261cdc0b68b92848220ae0b7f0a11f5dba1`. User-reported opening was about 15 seconds and ready UI about 1 second; sampled one-minute highs were about 0.0954 core and 117.2 MiB with zero reported restarts. These are bounded observations, not an SLA, load test, or capacity guarantee.
+
 React remains a client-rendered SPA. ASP.NET Core serves its compiled files from `wwwroot`
 and the existing JWT-protected API from the same origin. No server-side rendering, Node
 runtime, server session, or authorization bypass is introduced. Local Vite on 5173 and API

@@ -1,5 +1,7 @@
 # Local development
 
+> The hosted demo is already available at https://ca-harbor-care-demo.salmonsea-5286e167.westus.azurecontainerapps.io. This guide remains for safe local development only; local initialization/reset commands must never target the hosted database.
+
 ## Prerequisites
 
 - .NET SDK `10.0.301` or a compatible latest patch in that feature band

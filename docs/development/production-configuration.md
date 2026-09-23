@@ -1,5 +1,7 @@
 # Production configuration checkpoint
 
+> **Current checkpoint:** Production configuration and the release are complete. This reference retains setup rationale, but it is not a request to recreate secrets, jobs, grants, or configuration. Never document secret values; the public evidence is in [Milestone 6 evidence](../releases/milestone-06-evidence.md).
+
 Updated September 21, 2026. **The reviewed NGINX placeholder and its HTTPS verification
 are complete.** The user has since confirmed the Neon database/role logins, production
 Auth0 SPA and two-client Action, and GitHub production protections/eleven variables/demo
