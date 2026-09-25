@@ -12,7 +12,7 @@ RUN --mount=type=secret,id=demo_password,env=VITE_DEMO_PASSWORD \
     test -n "$VITE_AUTH0_DOMAIN" && test -n "$VITE_AUTH0_CLIENT_ID" && \
     test -n "$VITE_AUTH0_AUDIENCE" && npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0.301-alpine3.24@sha256:fc785a84b314fce6b7adb29ecc18542d7416f2e05c03ec1ebdb222eadaeafa50 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0.401-alpine3.24@sha256:3cc3bbbbf93d82104892f42aa9106b6be4d120346dea0649643a97c801525256 AS build
 WORKDIR /src
 
 COPY global.json Directory.Build.props Directory.Packages.props Hospital.slnx ./
